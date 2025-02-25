@@ -421,9 +421,14 @@ const GLOBAL_IGNORE_PATTERNS: &[&str] = &[
 
 fn global_ignore_path() -> PathBuf {
     let mut path = get_my_home().unwrap().unwrap();
+<<<<<<< HEAD
     path.push(".pearai");
     path.push("index");
     path.push(".globalpearaiignore");
+=======
+    path.push(".continue");
+    path.push(".continueignore");
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     path
 }
 

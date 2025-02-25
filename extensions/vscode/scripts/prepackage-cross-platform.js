@@ -24,6 +24,8 @@ const {
   copySqliteBinary,
   installNodeModuleInTempDirAndCopyToCurrent,
   downloadSqliteBinary,
+  copyTokenizers,
+  copyScripts,
 } = require("./utils");
 
 // Clear folders that will be packaged to ensure clean slate
@@ -84,7 +86,7 @@ function isWin() {
 async function package(target, os, arch, exe) {
   console.log("[info] Packaging extension for target ", target);
 
-  // Copy config_schema.json to config.json in docs and intellij
+  // Copy config_schema to intellij
   copyConfigSchema();
 
   // Install node_modules
@@ -103,6 +105,12 @@ async function package(target, os, arch, exe) {
   // Install and copy over native modules
   // *** onnxruntime-node ***
   await copyOnnxRuntimeFromNodeModules(target);
+
+  // copy llama tokenizers to out
+  copyTokenizers();
+
+  // Copy Linux scripts
+  await copyScripts();
 
   // *** Install @lancedb binary ***
   const lancePackageToInstall = {
@@ -156,15 +164,19 @@ async function package(target, os, arch, exe) {
           ? "libonnxruntime.so.1.14.0"
           : "onnxruntime.dll"
     }`,
-    "builtin-themes/dark_modern.json",
 
     // Code/styling for the sidebar
     "gui/assets/index.js",
     "gui/assets/index.css",
 
     // Tutorial
+<<<<<<< HEAD
     "media/welcome.md",
     "pearai_tutorial.py",
+=======
+    "media/move-chat-panel-right.md",
+    "continue_tutorial.py",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     "config_schema.json",
 
     // Embeddings model

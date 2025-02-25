@@ -53,7 +53,7 @@ const targetToLanceDb = {
   "linux-arm64": "@lancedb/vectordb-linux-arm64-gnu",
   "linux-x64": "@lancedb/vectordb-linux-x64-gnu",
   "win32-x64": "@lancedb/vectordb-win32-x64-msvc",
-  "win32-arm64": "@lancedb/vectordb-win32-x64-msvc", // they don't have a win32-arm64 build
+  "win32-arm64": "@lancedb/vectordb-win32-arm64-msvc",
 };
 
 async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
@@ -118,8 +118,21 @@ async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
 }
 
 (async () => {
-  fs.mkdirSync("out/node_modules", { recursive: true });
-  fs.mkdirSync("bin/node_modules", { recursive: true });
+  // Informs of where to look for node_sqlite3.node https://www.npmjs.com/package/bindings#:~:text=The%20searching%20for,file%20is%20found
+  // This is only needed for our `pkg` command at build time
+  fs.writeFileSync(
+    "out/package.json",
+    JSON.stringify(
+      {
+        name: "binary",
+        version: "1.0.0",
+        author: "Continue Dev, Inc",
+        license: "Apache-2.0",
+      },
+      undefined,
+      2,
+    ),
+  );
 
   console.log("[info] Downloading prebuilt lancedb...");
   for (const target of targets) {
@@ -162,6 +175,7 @@ async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
     "../core/vendor/tree-sitter.wasm",
     "../core/llm/llamaTokenizerWorkerPool.mjs",
     "../core/llm/llamaTokenizer.mjs",
+    "../core/llm/tiktokenWorkerPool.mjs",
   ];
   for (const f of filesToCopy) {
     fs.copyFileSync(
@@ -184,10 +198,19 @@ async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
     entryPoints: ["src/index.ts"],
     bundle: true,
     outfile: esbuildOutputFile,
-    external: ["esbuild", "./xhr-sync-worker.js", "vscode", "./index.node"],
+    external: [
+      "esbuild",
+      "./xhr-sync-worker.js",
+      "llamaTokenizerWorkerPool.mjs",
+      "tiktokenWorkerPool.mjs",
+      "vscode",
+      "./index.node",
+    ],
     format: "cjs",
     platform: "node",
     sourcemap: true,
+    minify: true,
+    treeShaking: true,
     loader: {
       // eslint-disable-next-line @typescript-eslint/naming-convention
       ".node": "file",
@@ -203,6 +226,11 @@ async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
   fs.cpSync(
     "../core/node_modules/jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js",
     "out/xhr-sync-worker.js",
+  );
+  fs.cpSync("../core/llm/tiktokenWorkerPool.mjs", "out/tiktokenWorkerPool.mjs");
+  fs.cpSync(
+    "../core/llm/llamaTokenizerWorkerPool.mjs",
+    "out/llamaTokenizerWorkerPool.mjs",
   );
 
   if (esbuildOnly) {
@@ -220,22 +248,24 @@ async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
 
     // Download and unzip prebuilt sqlite3 binary for the target
     console.log("[info] Downloading node-sqlite3");
-    const downloadUrl = `https://github.com/TryGhost/node-sqlite3/releases/download/v5.1.7/sqlite3-v5.1.7-napi-v6-${
-      target === "win32-arm64" ? "win32-ia32" : target
-    }.tar.gz`;
+
+    const downloadUrl =
+      // node-sqlite3 doesn't have a pre-built binary for win32-arm64
+      target === "win32-arm64"
+        ? "https://continue-server-binaries.s3.us-west-1.amazonaws.com/win32-arm64/node_sqlite3.tar.gz"
+        : `https://github.com/TryGhost/node-sqlite3/releases/download/v5.1.7/sqlite3-v5.1.7-napi-v6-${
+            target
+          }.tar.gz`;
+
     execCmdSync(`curl -L -o ${targetDir}/build.tar.gz ${downloadUrl}`);
     execCmdSync(`cd ${targetDir} && tar -xvzf build.tar.gz`);
-    fs.copyFileSync(
-      `${targetDir}/build/Release/node_sqlite3.node`,
-      `${targetDir}/node_sqlite3.node`,
-    );
 
     // Copy to build directory for testing
     try {
       const [platform, arch] = target.split("-");
       if (platform === currentPlatform && arch === currentArch) {
         fs.copyFileSync(
-          `${targetDir}/node_sqlite3.node`,
+          `${targetDir}/build/Release/node_sqlite3.node`,
           `build/node_sqlite3.node`,
         );
       }
@@ -245,28 +275,6 @@ async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
     }
 
     fs.unlinkSync(`${targetDir}/build.tar.gz`);
-    fs.rmSync(`${targetDir}/build`, {
-      recursive: true,
-      force: true,
-    });
-
-    // Download and unzip prebuilt esbuild binary for the target
-    console.log(`[info] Downloading esbuild for ${target}...`);
-    // Version is pinned to 0.19.11 in package.json to make sure that they match
-    execCmdSync(
-      `curl -o ${targetDir}/esbuild.tgz https://registry.npmjs.org/@esbuild/${target}/-/${target}-0.19.11.tgz`,
-    );
-    execCmdSync(`tar -xzvf ${targetDir}/esbuild.tgz -C ${targetDir}`);
-    if (target.startsWith("win32")) {
-      fs.cpSync(`${targetDir}/package/esbuild.exe`, `${targetDir}/esbuild.exe`);
-    } else {
-      fs.cpSync(`${targetDir}/package/bin/esbuild`, `${targetDir}/esbuild`);
-    }
-    fs.rmSync(`${targetDir}/esbuild.tgz`);
-    fs.rmSync(`${targetDir}/package`, {
-      force: true,
-      recursive: true,
-    });
 
     // copy @lancedb to bin folders
     console.log("[info] Copying @lancedb files to bin");
@@ -274,22 +282,33 @@ async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
       `node_modules/${targetToLanceDb[target]}/index.node`,
       `${targetDir}/index.node`,
     );
+
+    // Informs the `continue-binary` of where to look for node_sqlite3.node
+    // https://www.npmjs.com/package/bindings#:~:text=The%20searching%20for,file%20is%20found
+    // fs.writeFileSync(`${targetDir}/package.json`, "");
   }
-  // execCmdSync(
-  //   `npx pkg out/index.js --target node18-darwin-arm64 --no-bytecode --public-packages "*" --public -o bin/pkg`
-  // );
+
+  // Cleanup - this is needed when running locally
+  fs.rmSync("out/package.json");
 
   const pathsToVerify = [];
-  for (target of targets) {
+  for (const target of targets) {
     const exe = target.startsWith("win") ? ".exe" : "";
     const targetDir = `bin/${target}`;
     pathsToVerify.push(
       `${targetDir}/continue-binary${exe}`,
-      `${targetDir}/esbuild${exe}`,
       `${targetDir}/index.node`, // @lancedb
-      `${targetDir}/node_sqlite3.node`,
+      `${targetDir}/build/Release/node_sqlite3.node`,
     );
   }
+
+  // Note that this doesn't verify they actually made it into the binary, just that they were in the expected folder before it was built
+  pathsToVerify.push("out/index.js");
+  pathsToVerify.push("out/llamaTokenizerWorkerPool.mjs");
+  pathsToVerify.push("out/tiktokenWorkerPool.mjs");
+  pathsToVerify.push("out/xhr-sync-worker.js");
+  pathsToVerify.push("out/tree-sitter.wasm");
+
   validateFilesPresent(pathsToVerify);
 
   console.log("[info] Done!");

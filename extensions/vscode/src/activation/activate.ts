@@ -1,10 +1,11 @@
-import { getContinueRcPath, getTsConfigPath, migrate } from "core/util/paths";
+import { getContinueRcPath, getTsConfigPath } from "core/util/paths";
 import { Telemetry } from "core/util/posthog";
-import path from "node:path";
 import * as vscode from "vscode";
+
 import { VsCodeExtension } from "../extension/VsCodeExtension";
 import registerQuickFixProvider from "../lang-server/codeActions";
 import { getExtensionVersion } from "../util/util";
+<<<<<<< HEAD
 import { VsCodeContinueApi } from "./api";
 import { setupInlineTips } from "./inlineTips";
 import { isFirstLaunch } from "../copySettings";
@@ -49,6 +50,11 @@ export async function attemptUninstallExtension(extensionId: string): Promise<vo
       console.error(error);
   }
 }
+=======
+
+import { VsCodeContinueApi } from "./api";
+import setupInlineTips from "./InlineTipManager";
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
 export async function activateExtension(context: vscode.ExtensionContext) {
   // Add necessary files
@@ -61,6 +67,7 @@ export async function activateExtension(context: vscode.ExtensionContext) {
 
   const vscodeExtension = new VsCodeExtension(context);
 
+<<<<<<< HEAD
   // migrate("showWelcome_1", () => {
   //   vscode.commands.executeCommand(
   //     "markdown.showPreview",
@@ -88,6 +95,9 @@ export async function activateExtension(context: vscode.ExtensionContext) {
 
 
   // Load PearAI configuration
+=======
+  // Load Continue configuration
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   if (!context.globalState.get("hasBeenInstalled")) {
     context.globalState.update("hasBeenInstalled", true);
     Telemetry.capture(

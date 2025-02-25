@@ -16,6 +16,7 @@ class CodeContextProvider extends BaseContextProvider {
     displayTitle: "Code",
     description: "Type to search",
     type: "submenu",
+    dependsOnIndexing: true,
   };
 
   async getContextItems(
@@ -23,8 +24,12 @@ class CodeContextProvider extends BaseContextProvider {
     extras: ContextProviderExtras,
   ): Promise<ContextItem[]> {
     // Assume the query is the id as returned by loadSubmenuItems
+    const workspaceDirs = await extras.ide.getWorkspaceDirs();
     return [
-      await CodeSnippetsCodebaseIndex.getForId(Number.parseInt(query, 10)),
+      await CodeSnippetsCodebaseIndex.getForId(
+        Number.parseInt(query, 10),
+        workspaceDirs,
+      ),
     ];
   }
 
@@ -39,6 +44,7 @@ class CodeContextProvider extends BaseContextProvider {
     );
 
     const submenuItems: ContextSubmenuItem[] = [];
+
     for (const snippetList of snippets.slice(-MAX_SUBMENU_ITEMS)) {
       submenuItems.push(...snippetList);
     }

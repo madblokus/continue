@@ -7,7 +7,7 @@
     "skipLibCheck": true,
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
-    "strict": false,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Node",
@@ -16,6 +16,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "noEmitOnError": false,
+<<<<<<< HEAD
     "baseUrl": ".",
     "paths": {
       "vscode": ["../extensions/vscode/node_modules/vscode"],
@@ -26,6 +27,10 @@
       "../extensions/vscode/node_modules/@types"
     ],
     "types": ["vscode", "vscode-webview"]
+=======
+    "types": ["vitest/globals"]
+    // Disabled for now since it's causing too many errors
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   },
   "include": ["src", "../src/util/messenger.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]

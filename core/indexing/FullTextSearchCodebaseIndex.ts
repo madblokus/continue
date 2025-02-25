@@ -1,6 +1,12 @@
 import { BranchAndDir, Chunk, IndexTag, IndexingProgressUpdate } from "../";
+<<<<<<< HEAD
 import { getBasename } from "../util/index";
 import { RETRIEVAL_PARAMS } from "../util/parameters";
+=======
+import { RETRIEVAL_PARAMS } from "../util/parameters";
+import { getUriPathBasename } from "../util/uri";
+
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 import { ChunkCodebaseIndex } from "./chunk/ChunkCodebaseIndex";
 import { DatabaseConnection, SqliteDb, tagToString } from "./refreshIndex";
 import {
@@ -10,10 +16,26 @@ import {
   type CodebaseIndex,
 } from "./types";
 
+<<<<<<< HEAD
+=======
+export interface RetrieveConfig {
+  tags: BranchAndDir[];
+  text: string;
+  n: number;
+  directory?: string;
+  filterPaths?: string[];
+  bm25Threshold?: number;
+}
+
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 export class FullTextSearchCodebaseIndex implements CodebaseIndex {
   relativeExpectedTime: number = 0.2;
   static artifactId = "sqliteFts";
   artifactId: string = FullTextSearchCodebaseIndex.artifactId;
+<<<<<<< HEAD
+=======
+  pathWeightMultiplier = 10.0;
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
   private async _createTables(db: DatabaseConnection) {
     await db.exec(`CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(
@@ -68,20 +90,35 @@ export class FullTextSearchCodebaseIndex implements CodebaseIndex {
 
       yield {
         progress: i / results.compute.length,
+<<<<<<< HEAD
         desc: `Indexing ${getBasename(item.path)}`,
         status: "indexing",
       };
       markComplete([item], IndexResultType.Compute);
+=======
+        desc: `Indexing ${getUriPathBasename(item.path)}`,
+        status: "indexing",
+      };
+      await markComplete([item], IndexResultType.Compute);
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     }
 
     // Add tag
     for (const item of results.addTag) {
+<<<<<<< HEAD
       markComplete([item], IndexResultType.AddTag);
+=======
+      await markComplete([item], IndexResultType.AddTag);
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     }
 
     // Remove tag
     for (const item of results.removeTag) {
+<<<<<<< HEAD
       markComplete([item], IndexResultType.RemoveTag);
+=======
+      await markComplete([item], IndexResultType.RemoveTag);
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     }
 
     // Delete
@@ -93,6 +130,7 @@ export class FullTextSearchCodebaseIndex implements CodebaseIndex {
 
       await db.run("DELETE FROM fts WHERE path = ?", [item.path]);
 
+<<<<<<< HEAD
       markComplete([item], IndexResultType.Delete);
     }
   }
@@ -135,12 +173,31 @@ export class FullTextSearchCodebaseIndex implements CodebaseIndex {
     ]);
 
     results = results.filter((result) => result.rank <= bm25Threshold);
+=======
+      await markComplete([item], IndexResultType.Delete);
+    }
+  }
+
+  async retrieve(config: RetrieveConfig): Promise<Chunk[]> {
+    const db = await SqliteDb.get();
+
+    const query = this.buildRetrieveQuery(config);
+    const parameters = this.getRetrieveQueryParameters(config);
+
+    let results = await db.all(query, parameters);
+
+    results = results.filter(
+      (result) =>
+        result.rank <= (config.bm25Threshold ?? RETRIEVAL_PARAMS.bm25Threshold),
+    );
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
     const chunks = await db.all(
       `SELECT * FROM chunks WHERE id IN (${results.map(() => "?").join(",")})`,
       results.map((result) => result.chunkId),
     );
 
+<<<<<<< HEAD
     return chunks.map((chunk) => {
       return {
         filepath: chunk.path,
@@ -151,5 +208,61 @@ export class FullTextSearchCodebaseIndex implements CodebaseIndex {
         digest: chunk.cacheKey,
       };
     });
+=======
+    return chunks.map((chunk) => ({
+      filepath: chunk.path,
+      index: chunk.index,
+      startLine: chunk.startLine,
+      endLine: chunk.endLine,
+      content: chunk.content,
+      digest: chunk.cacheKey,
+    }));
+  }
+
+  private buildTagFilter(tags: BranchAndDir[]): string {
+    const tagStrings = this.convertTags(tags);
+
+    return `AND chunk_tags.tag IN (${tagStrings.map(() => "?").join(",")})`;
+  }
+
+  private buildPathFilter(filterPaths: string[] | undefined): string {
+    if (!filterPaths || filterPaths.length === 0) {
+      return "";
+    }
+    return `AND fts_metadata.path IN (${filterPaths.map(() => "?").join(",")})`;
+  }
+
+  private buildRetrieveQuery(config: RetrieveConfig): string {
+    return `
+      SELECT fts_metadata.chunkId, fts_metadata.path, fts.content, rank
+      FROM fts
+      JOIN fts_metadata ON fts.rowid = fts_metadata.id
+      JOIN chunk_tags ON fts_metadata.chunkId = chunk_tags.chunkId
+      WHERE fts MATCH ?
+      ${this.buildTagFilter(config.tags)}
+      ${this.buildPathFilter(config.filterPaths)}
+      ORDER BY bm25(fts, ${this.pathWeightMultiplier})
+      LIMIT ?
+    `;
+  }
+
+  private getRetrieveQueryParameters(config: RetrieveConfig) {
+    const { text, tags, filterPaths, n } = config;
+    const tagStrings = this.convertTags(tags);
+
+    return [
+      text.replace(/\?/g, ""),
+      ...tagStrings,
+      ...(filterPaths || []),
+      Math.ceil(n),
+    ];
+  }
+
+  private convertTags(tags: BranchAndDir[]): string[] {
+    // Notice that the "chunks" artifactId is used because of linking between tables
+    return tags.map((tag) =>
+      tagToString({ ...tag, artifactId: ChunkCodebaseIndex.artifactId }),
+    );
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   }
 }

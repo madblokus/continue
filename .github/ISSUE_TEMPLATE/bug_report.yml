@@ -19,12 +19,32 @@ body:
     attributes:
       label: Relevant environment info
       description: |
+<<<<<<< HEAD
         - **OS**: e.g. macOS 14.2.1
         - Include also your LLM Model if it is relevant to your issue
           - **Model**: e.g. Ollama v0.1.19
       value: |
         - OS:
         - IDE:
+=======
+        Feel free to omit any info that is not relevant to your issue.
+
+        - **OS**: macOS
+        - **Continue version**: v0.9.4
+        - **IDE version**:  VSCode 1.85.1
+        - Model: Claude Sonnet 3.5
+        - config.yaml: `models: ...`
+        - OR config.json: `{ "models": ... }`
+      value: |
+        - OS:
+        - Continue version:
+        - IDE version:
+        - Model:
+        - config:
+          ```yaml
+
+          ```
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       render: Markdown
     validations:
       required: false

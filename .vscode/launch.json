@@ -6,20 +6,45 @@
   "compounds": [],
   "configurations": [
     {
+      "name": "Launch extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/extensions/vscode",
+      "args": [
+        // Pass a directory to manually test in
+        "${workspaceFolder}/manual-testing-sandbox",
+        "${workspaceFolder}/manual-testing-sandbox/test.js",
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/vscode"
+      ],
+      "pauseForSourceMap": false,
+      "outFiles": ["${workspaceFolder}/extensions/vscode/out/extension.js"],
+      "preLaunchTask": "vscode-extension:build",
+      "env": {
+        // "CONTROL_PLANE_ENV": "local",
+        "CONTINUE_GLOBAL_DIR": "${workspaceFolder}/extensions/.continue-debug"
+        // "staging" for the preview deployment	        "CONTINUE_GLOBAL_DIR": "${workspaceFolder}/extensions/.continue-debug"
+        // "local" for entirely local development of control plane/proxy
+      }
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "Core Binary",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/binary/out/index.js",
-      // "preLaunchTask": "binary:esbuild",
       "outFiles": ["${workspaceFolder}/binary/out/**/*.js"],
       "sourceMaps": true,
       "smartStep": true,
       "internalConsoleOptions": "openOnSessionStart",
       "cwd": "${workspaceFolder}/binary",
       "env": {
+        // "CONTROL_PLANE_ENV": "test",
         "CONTINUE_DEVELOPMENT": "true",
+<<<<<<< HEAD
         "CONTINUE_GLOBAL_DIR": "${workspaceFolder}/binary/.pearai"
+=======
+        "CONTINUE_GLOBAL_DIR": "${workspaceFolder}/extensions/.continue-debug"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       }
     },
     {
@@ -52,6 +77,7 @@
       "sourceMaps": true
       // "preLaunchTask": "gui:dev"
     },
+<<<<<<< HEAD
     {
       "name": "Extension (VSCode)",
       "type": "extensionHost",
@@ -73,9 +99,11 @@
         // "CONTROL_PLANE_ENV": "local"
       }
     },
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     // Has to be run after starting the server (separately or using the compound configuration)
     {
-      "name": "Tests (VSCode)",
+      "name": "Run tests",
       "type": "extensionHost",
       "request": "launch",
       "cwd": "${workspaceFolder}/extensions/vscode",
@@ -139,24 +167,5 @@
         "NODE_OPTIONS": "--experimental-vm-modules"
       }
     }
-    // {
-    //   "name": "[openai-adapters] Jest Test Debugger, Current Open File",
-    //   "type": "node",
-    //   "request": "launch",
-    //   "runtimeArgs": [
-    //     "--inspect-brk",
-    //     "${workspaceRoot}/packages/openai-adapters/node_modules/jest/bin/jest.js",
-    //     "--runInBand",
-    //     "--config",
-    //     "${workspaceRoot}/packages/openai-adapters/jest.config.mjs",
-    //     "${relativeFile}"
-    //   ],
-    //   "cwd": "${workspaceRoot}/packages/openai-adapters",
-    //   "console": "integratedTerminal",
-    //   "internalConsoleOptions": "neverOpen",
-    //   "env": {
-    //     "NODE_OPTIONS": "--experimental-vm-modules"
-    //   }
-    // }
   ]
 }

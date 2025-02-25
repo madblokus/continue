@@ -1,7 +1,15 @@
 import { ChatMessage, IDE, LLMFullCompletionOptions, PromptLog } from "core";
 import type { FromWebviewProtocol, ToWebviewProtocol } from "core/protocol";
-import { MessageIde } from "core/util/messageIde";
-import { Message } from "core/util/messenger";
+import {
+  GeneratorReturnType,
+  GeneratorYieldType,
+  WebviewMessage,
+  WebviewProtocolGeneratorMessage,
+  WebviewSingleMessage,
+  WebviewSingleProtocolMessage,
+} from "core/protocol/util";
+import { MessageIde } from "core/protocol/messenger/messageIde";
+import { Message } from "core/protocol/messenger";
 import { createContext } from "react";
 import { v4 as uuidv4 } from "uuid";
 import "vscode-webview";
@@ -30,20 +38,23 @@ export interface IIdeMessenger {
   request<T extends keyof FromWebviewProtocol>(
     messageType: T,
     data: FromWebviewProtocol[T][0],
-  ): Promise<FromWebviewProtocol[T][1]>;
+  ): Promise<WebviewSingleProtocolMessage<T>>;
 
   streamRequest<T extends keyof FromWebviewProtocol>(
     messageType: T,
     data: FromWebviewProtocol[T][0],
     cancelToken?: AbortSignal,
-  ): FromWebviewProtocol[T][1];
+  ): AsyncGenerator<
+    GeneratorYieldType<FromWebviewProtocol[T][1]>[],
+    GeneratorReturnType<FromWebviewProtocol[T][1]> | undefined
+  >;
 
   llmStreamChat(
     modelTitle: string,
     cancelToken: AbortSignal | undefined,
     messages: ChatMessage[],
     options?: LLMFullCompletionOptions,
-  ): AsyncGenerator<ChatMessage, PromptLog, unknown>;
+  ): AsyncGenerator<ChatMessage[], PromptLog | undefined>;
 
   ide: IDE;
 }
@@ -52,10 +63,23 @@ export class IdeMessenger implements IIdeMessenger {
   ide: IDE;
 
   constructor() {
-    this.ide = new MessageIde(this.request.bind(this), () => {});
+    this.ide = new MessageIde(
+      async (messageType, data) => {
+        const result = await this.request(messageType, data);
+        if (result.status === "error") {
+          throw new Error(result.error);
+        }
+        return result.content;
+      },
+      () => {},
+    );
   }
 
-  private _postToIde(messageType: string, data: any, messageId?: string) {
+  private _postToIde(
+    messageType: string,
+    data: any,
+    messageId: string = uuidv4(),
+  ) {
     if (typeof vscode === "undefined") {
       if (isJetBrains()) {
         if (window.postIntellijMessage === undefined) {
@@ -66,23 +90,24 @@ export class IdeMessenger implements IIdeMessenger {
           );
           throw new Error("postIntellijMessage is undefined");
         }
-        messageId = messageId ?? uuidv4();
         window.postIntellijMessage?.(messageType, data, messageId);
         return;
       } else {
         console.log(
-          "Unable to send message: vscode is undefined. ",
+          "Unable to send message: vscode is undefined",
           messageType,
           data,
         );
         return;
       }
     }
+
     const msg: Message = {
-      messageId: messageId ?? uuidv4(),
+      messageId,
       messageType,
       data,
     };
+
     vscode.postMessage(msg);
   }
 
@@ -121,72 +146,129 @@ export class IdeMessenger implements IIdeMessenger {
   request<T extends keyof FromWebviewProtocol>(
     messageType: T,
     data: FromWebviewProtocol[T][0],
-  ): Promise<FromWebviewProtocol[T][1]> {
+  ): Promise<WebviewSingleMessage<T>> {
     const messageId = uuidv4();
 
     return new Promise((resolve) => {
       const handler = (event: any) => {
         if (event.data.messageId === messageId) {
           window.removeEventListener("message", handler);
-          resolve(event.data.data);
+          resolve(event.data.data as WebviewSingleMessage<T>);
         }
       };
       window.addEventListener("message", handler);
 
       this.post(messageType, data, messageId);
-    }) as any;
+    });
   }
 
+  /**
+   * Because of weird type stuff, we're actually yielding an array of the things
+   * that are streamed. For example, if the return type here says
+   * AsyncGenerator<ChatMessage>, then it's actually AsyncGenerator<ChatMessage[]>.
+   * This needs to be handled by the caller.
+   *
+   * Using unknown for now to make this more explicit
+   */
   async *streamRequest<T extends keyof FromWebviewProtocol>(
     messageType: T,
     data: FromWebviewProtocol[T][0],
     cancelToken?: AbortSignal,
-  ): FromWebviewProtocol[T][1] {
+  ): AsyncGenerator<
+    GeneratorYieldType<FromWebviewProtocol[T][1]>[],
+    GeneratorReturnType<FromWebviewProtocol[T][1]> | undefined
+  > {
     const messageId = uuidv4();
 
     this.post(messageType, data, messageId);
 
-    let buffer = "";
+    const buffer: GeneratorYieldType<FromWebviewProtocol[T][1]>[] = [];
     let index = 0;
     let done = false;
+<<<<<<< HEAD
     let returnVal = undefined;
     let citations = [];
+=======
+    let returnVal: GeneratorReturnType<FromWebviewProtocol[T][1]> | undefined =
+      undefined;
+    let error: string | null = null;
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
-    const handler = (event: { data: Message }) => {
+    // This handler receieves individual WebviewMessengerResults
+    // And pushes them to buffer
+    const handler = (event: {
+      data: Message<WebviewProtocolGeneratorMessage<T>>;
+    }) => {
       if (event.data.messageId === messageId) {
         const responseData = event.data.data;
+<<<<<<< HEAD
         citations = responseData?.citations;
+=======
+        if ("error" in responseData) {
+          error = responseData.error;
+          return;
+          // throw new Error(responseData.error);
+        }
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         if (responseData.done) {
           window.removeEventListener("message", handler);
           done = true;
-          returnVal = responseData;
+          returnVal = responseData.content;
         } else {
-          buffer += responseData.content;
+          buffer.push(responseData.content);
         }
       }
     };
     window.addEventListener("message", handler);
 
-    cancelToken?.addEventListener("abort", () => {
+    const handleAbort = () => {
       this.post("abort", undefined, messageId);
-    });
+    };
+    cancelToken?.addEventListener("abort", handleAbort);
 
+<<<<<<< HEAD
     while (!done) {
       if (buffer.length > index) {
         const chunk = buffer.slice(index);
         index = buffer.length;
         yield {content: chunk, citations};
+=======
+    try {
+      while (!done) {
+        if (error) {
+          throw error;
+        }
+        if (buffer.length > index) {
+          const chunks = buffer.slice(index);
+          index = buffer.length;
+          yield chunks;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       }
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
 
+<<<<<<< HEAD
     if (buffer.length > index) {
       const chunk = buffer.slice(index);
       index = buffer.length;
       yield {content: chunk, citations};
     }
+=======
+      if (buffer.length > index) {
+        const chunks = buffer.slice(index);
+        yield chunks;
+      }
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
-    return returnVal;
+      if (!returnVal) {
+        return undefined;
+      }
+      return returnVal;
+    } catch (e) {
+      throw e;
+    } finally {
+      cancelToken?.removeEventListener("abort", handleAbort);
+    }
   }
 
   async *llmStreamChat(
@@ -194,7 +276,7 @@ export class IdeMessenger implements IIdeMessenger {
     cancelToken: AbortSignal | undefined,
     messages: ChatMessage[],
     options: LLMFullCompletionOptions = {},
-  ): AsyncGenerator<ChatMessage, PromptLog> {
+  ): AsyncGenerator<ChatMessage[], PromptLog | undefined> {
     const gen = this.streamRequest(
       "llm/streamChat",
       {
@@ -207,19 +289,14 @@ export class IdeMessenger implements IIdeMessenger {
 
     let next = await gen.next();
     while (!next.done) {
+<<<<<<< HEAD
       yield { role: "user", content: next.value.content, citations: next.value.citations };
+=======
+      yield next.value;
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       next = await gen.next();
     }
-
-    if (next.value.error) {
-      throw new Error(next.value.error);
-    }
-
-    return {
-      prompt: next.value.content?.prompt,
-      completion: next.value.content?.completion,
-      completionOptions: next.value.content?.completionOptions,
-    };
+    return next.value;
   }
 }
 

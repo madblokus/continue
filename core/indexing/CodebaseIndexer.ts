@@ -1,8 +1,19 @@
 import * as fs from "fs/promises";
+<<<<<<< HEAD
 import { ConfigHandler } from "../config/ConfigHandler.js";
 import { IContinueServerClient } from "../continueServer/interface.js";
 import { IDE, IndexingProgressUpdate, IndexTag } from "../index.js";
 import { getIndexSqlitePath, getLanceDbPath } from "../util/paths.js";
+=======
+
+import { ConfigHandler } from "../config/ConfigHandler.js";
+import { IContinueServerClient } from "../continueServer/interface.js";
+import { IDE, IndexingProgressUpdate, IndexTag } from "../index.js";
+import { extractMinimalStackTraceInfo } from "../util/extractMinimalStackTraceInfo.js";
+import { getIndexSqlitePath, getLanceDbPath } from "../util/paths.js";
+
+import { findUriInDirs, getUriPathBasename } from "../util/uri.js";
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 import { ChunkCodebaseIndex } from "./chunk/ChunkCodebaseIndex.js";
 import { CodeSnippetsCodebaseIndex } from "./CodeSnippetsIndex.js";
 import { FullTextSearchCodebaseIndex } from "./FullTextSearchCodebaseIndex.js";
@@ -71,15 +82,22 @@ export class CodebaseIndexer {
   }
 
   protected async getIndexesToBuild(): Promise<CodebaseIndex[]> {
+<<<<<<< HEAD
     const config = await this.configHandler.loadConfig();
     const pathSep = await this.ide.pathSep();
+=======
+    const { config } = await this.configHandler.loadConfig();
+    if (!config) {
+      return [];
+    }
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
     const indexes = [
       new ChunkCodebaseIndex(
         this.ide.readFile.bind(this.ide),
         pathSep,
         this.continueServerClient,
-        config.embeddingsProvider.maxChunkSize,
+        config.embeddingsProvider.maxEmbeddingChunkSize,
       ), // Chunking must come first
       new LanceDbIndex(
         config.embeddingsProvider,
@@ -94,16 +112,20 @@ export class CodebaseIndexer {
     return indexes;
   }
 
-  public async refreshFile(file: string): Promise<void> {
+  public async refreshFile(
+    file: string,
+    workspaceDirs: string[],
+  ): Promise<void> {
     if (this.pauseToken.paused) {
       // NOTE: by returning here, there is a chance that while paused a file is modified and
       // then after unpausing the file is not reindexed
       return;
     }
-    const workspaceDir = await this.getWorkspaceDir(file);
-    if (!workspaceDir) {
+    const { foundInDir } = findUriInDirs(file, workspaceDirs);
+    if (!foundInDir) {
       return;
     }
+<<<<<<< HEAD
     const branch = await this.ide.getBranch(workspaceDir);
     const repoName = await this.ide.getRepoName(workspaceDir);
     const indexesToBuild = await this.getIndexesToBuild();
@@ -111,6 +133,15 @@ export class CodebaseIndexer {
     for (const index of indexesToBuild) {
       const tag = {
         directory: workspaceDir,
+=======
+    const branch = await this.ide.getBranch(foundInDir);
+    const repoName = await this.ide.getRepoName(foundInDir);
+    const indexesToBuild = await this.getIndexesToBuild();
+    const stats = await this.ide.getFileStats([file]);
+    for (const index of indexesToBuild) {
+      const tag = {
+        directory: foundInDir,
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         branch,
         artifactId: index.artifactId,
       };
@@ -141,23 +172,62 @@ export class CodebaseIndexer {
     }
   }
 
-  async *refresh(
-    workspaceDirs: string[],
+  async *refreshFiles(files: string[]): AsyncGenerator<IndexingProgressUpdate> {
+    let progress = 0;
+    if (files.length === 0) {
+      yield {
+        progress: 1,
+        desc: "Indexing Complete",
+        status: "done",
+      };
+    }
+
+    const workspaceDirs = await this.ide.getWorkspaceDirs();
+
+    const progressPer = 1 / files.length;
+    try {
+      for (const file of files) {
+        yield {
+          progress,
+          desc: `Indexing file ${file}...`,
+          status: "indexing",
+        };
+        await this.refreshFile(file, workspaceDirs);
+
+        progress += progressPer;
+
+        if (this.pauseToken.paused) {
+          yield* this.yieldUpdateAndPause();
+        }
+      }
+
+      yield {
+        progress: 1,
+        desc: "Indexing Complete",
+        status: "done",
+      };
+    } catch (err) {
+      yield this.handleErrorAndGetProgressUpdate(err);
+    }
+  }
+
+  async *refreshDirs(
+    dirs: string[],
     abortSignal: AbortSignal,
   ): AsyncGenerator<IndexingProgressUpdate> {
     let progress = 0;
 
-    if (workspaceDirs.length === 0) {
+    if (dirs.length === 0) {
       yield {
-        progress,
+        progress: 1,
         desc: "Nothing to index",
-        status: "disabled",
+        status: "done",
       };
       return;
     }
 
-    const config = await this.configHandler.loadConfig();
-    if (config.disableIndexing) {
+    const { config } = await this.configHandler.loadConfig();
+    if (config?.disableIndexing) {
       yield {
         progress,
         desc: "Indexing is disabled in config.json",
@@ -172,11 +242,14 @@ export class CodebaseIndexer {
       };
     }
 
+<<<<<<< HEAD
     let completedDirs = 0;
 
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     // Wait until Git Extension has loaded to report progress
     // so we don't appear stuck at 0% while waiting
-    await this.ide.getRepoName(workspaceDirs[0]);
+    await this.ide.getRepoName(dirs[0]);
 
     yield {
       progress,
@@ -184,6 +257,7 @@ export class CodebaseIndexer {
       status: "loading",
     };
     const beginTime = Date.now();
+<<<<<<< HEAD
 
     for (const directory of workspaceDirs) {
       const dirBasename = await this.basename(directory);
@@ -208,6 +282,32 @@ export class CodebaseIndexer {
         }
       }
 
+=======
+
+    for (const directory of dirs) {
+      const dirBasename = getUriPathBasename(directory);
+      yield {
+        progress,
+        desc: `Discovering files in ${dirBasename}...`,
+        status: "indexing",
+      };
+      const directoryFiles = [];
+      for await (const p of walkDirAsync(directory, this.ide)) {
+        directoryFiles.push(p);
+        if (abortSignal.aborted) {
+          yield {
+            progress: 0,
+            desc: "Indexing cancelled",
+            status: "cancelled",
+          };
+          return;
+        }
+        if (this.pauseToken.paused) {
+          yield* this.yieldUpdateAndPause();
+        }
+      }
+
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       const branch = await this.ide.getBranch(directory);
       const repoName = await this.ide.getRepoName(directory);
       let nextLogThreshold = 0;
@@ -215,16 +315,26 @@ export class CodebaseIndexer {
       try {
         for await (const updateDesc of this.indexFiles(
           directory,
+<<<<<<< HEAD
           workspaceFiles,
+=======
+          directoryFiles,
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
           branch,
           repoName,
         )) {
           // Handle pausing in this loop because it's the only one really taking time
           if (abortSignal.aborted) {
             yield {
+<<<<<<< HEAD
               progress: 1,
               desc: "Indexing cancelled",
               status: "disabled",
+=======
+              progress: 0,
+              desc: "Indexing cancelled",
+              status: "cancelled",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
             };
             return;
           }
@@ -237,7 +347,11 @@ export class CodebaseIndexer {
             nextLogThreshold += 0.025;
             this.logProgress(
               beginTime,
+<<<<<<< HEAD
               Math.floor(workspaceFiles.length * updateDesc.progress),
+=======
+              Math.floor(directoryFiles.length * updateDesc.progress),
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
               updateDesc.progress,
             );
           }
@@ -266,7 +380,11 @@ export class CodebaseIndexer {
       progress: 0,
       desc: `Indexing failed: ${err}`,
       status: "failed",
+<<<<<<< HEAD
       // debugInfo: extractMinimalStackTraceInfo((err as any)?.stack),
+=======
+      debugInfo: extractMinimalStackTraceInfo((err as any)?.stack),
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     };
   }
 
@@ -289,8 +407,13 @@ export class CodebaseIndexer {
       progress: 0,
       desc: errMsg,
       status: "failed",
+<<<<<<< HEAD
       // shouldClearIndexes,
       // debugInfo: extractMinimalStackTraceInfo(err.stack),
+=======
+      shouldClearIndexes,
+      debugInfo: extractMinimalStackTraceInfo(err.stack),
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     };
   }
 
@@ -344,18 +467,31 @@ export class CodebaseIndexer {
   }
 
   private async *indexFiles(
+<<<<<<< HEAD
     workspaceDir: string,
     workspaceFiles: string[],
     branch: string,
     repoName: string | undefined,
   ): AsyncGenerator<IndexingProgressUpdate> {
     const stats = await this.ide.getLastModified(workspaceFiles);
+=======
+    directory: string,
+    files: string[],
+    branch: string,
+    repoName: string | undefined,
+  ): AsyncGenerator<IndexingProgressUpdate> {
+    const stats = await this.ide.getFileStats(files);
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     const indexesToBuild = await this.getIndexesToBuild();
     let completedIndexCount = 0;
     let progress = 0;
     for (const codebaseIndex of indexesToBuild) {
       const tag: IndexTag = {
+<<<<<<< HEAD
         directory: workspaceDir,
+=======
+        directory,
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         branch,
         artifactId: codebaseIndex.artifactId,
       };
@@ -408,6 +544,7 @@ export class CodebaseIndexer {
       completedIndexCount += 1;
     }
   }
+<<<<<<< HEAD
 
   private async getWorkspaceDir(filepath: string): Promise<string | undefined> {
     const workspaceDirs = await this.ide.getWorkspaceDirs();
@@ -424,4 +561,6 @@ export class CodebaseIndexer {
     const path = filepath.split(pathSep);
     return path[path.length - 1];
   }
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 }

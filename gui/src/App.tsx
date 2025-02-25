@@ -1,24 +1,17 @@
 import { useDispatch } from "react-redux";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import Layout from "./components/Layout";
-import { SubmenuContextProvidersContext } from "./context/SubmenuContextProviders";
-import { VscThemeContext } from "./context/VscTheme";
+import { VscThemeProvider } from "./context/VscTheme";
 import useSetup from "./hooks/useSetup";
-import useSubmenuContextProviders from "./hooks/useSubmenuContextProviders";
-import { useVscTheme } from "./hooks/useVscTheme";
 import { AddNewModel, ConfigureProvider } from "./pages/AddNewModel";
+import ConfigErrorPage from "./pages/config-error";
 import ErrorPage from "./pages/error";
-import GUI from "./pages/gui";
-import { default as Help, default as HelpPage } from "./pages/help";
+import Chat from "./pages/gui";
 import History from "./pages/history";
 import MigrationPage from "./pages/migration";
-import MonacoPage from "./pages/monaco";
-import ApiKeyAutocompleteOnboarding from "./pages/onboarding/apiKeyAutocompleteOnboarding";
-import ApiKeysOnboarding from "./pages/onboarding/ApiKeysOnboarding";
-import LocalOnboarding from "./pages/onboarding/LocalOnboarding";
-import Onboarding from "./pages/onboarding/Onboarding";
-import SettingsPage from "./pages/settings";
+import MorePage from "./pages/More";
 import Stats from "./pages/stats";
+<<<<<<< HEAD
 import Inventory from "./pages/inventory";
 import PerplexityGUI from "./integrations/perplexity/perplexitygui";
 import Welcome from "./pages/welcome/welcomeGui";
@@ -26,6 +19,11 @@ import { ContextMenuProvider } from './components/ContextMenuProvider';
 import Mem0GUI from "./integrations/mem0/mem0gui";
 // import PerplexitySidebarGUI from "./integrations/perplexity/PerplexitySidebarGUI";
 import Mem0SidebarGUI from "./integrations/mem0/Mem0SidebarGUI";
+=======
+import { ROUTES } from "./util/navigation";
+import { SubmenuContextProvidersProvider } from "./context/SubmenuContextProviders";
+import ConfigPage from "./pages/config";
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
 
 declare global {
@@ -129,10 +127,57 @@ const router = createMemoryRouter(
   ],
   // TODO: Remove replace /welcome with /inventory when done testing
   {
+<<<<<<< HEAD
     initialEntries: [
       window.isPearOverlay
         ? (window.isFirstLaunch ? "/welcome" : "/inventory/home")
         : window.initialRoute
+=======
+    path: ROUTES.HOME,
+    element: <Layout />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: "/index.html",
+        element: <Chat />,
+      },
+      {
+        path: ROUTES.HOME,
+        element: <Chat />,
+      },
+      {
+        path: "/history",
+        element: <History />,
+      },
+      {
+        path: "/stats",
+        element: <Stats />,
+      },
+      {
+        path: "/addModel",
+        element: <AddNewModel />,
+      },
+      {
+        path: "/addModel/provider/:providerName",
+        element: <ConfigureProvider />,
+      },
+      {
+        path: "/more",
+        element: <MorePage />,
+      },
+      {
+        path: ROUTES.CONFIG_ERROR,
+        element: <ConfigErrorPage />,
+      },
+      {
+        path: ROUTES.CONFIG,
+        element: <ConfigPage />,
+      },
+      {
+        path: "/migration",
+        element: <MigrationPage />,
+      },
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     ],
     // FOR DEV'ing welcome:
     // initialEntries: [window.isPearOverlay ? "/welcome" : window.initialRoute],
@@ -143,7 +188,17 @@ const router = createMemoryRouter(
 
 
 
+/*
+  Prevents entire app from rerendering continuously with useSetup in App
+  TODO - look into a more redux-esque way to do this
+*/
+function SetupListeners() {
+  useSetup();
+  return <></>;
+}
+
 function App() {
+<<<<<<< HEAD
   const dispatch = useDispatch();
   useSetup(dispatch);
 
@@ -159,6 +214,15 @@ function App() {
         </SubmenuContextProvidersContext.Provider>
       </VscThemeContext.Provider>
     </ContextMenuProvider>
+=======
+  return (
+    <VscThemeProvider>
+      <SubmenuContextProvidersProvider>
+        <RouterProvider router={router} />
+      </SubmenuContextProvidersProvider>
+      <SetupListeners />
+    </VscThemeProvider>
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   );
 }
 

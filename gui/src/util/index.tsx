@@ -1,6 +1,12 @@
+<<<<<<< HEAD:gui/src/util/index.tsx
 import { ReactElement } from "react";
 import { getLocalStorage } from "./localStorage";
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d:gui/src/util/index.ts
 import _ from "lodash";
+import { getLocalStorage } from "./localStorage";
+import { KeyboardEvent } from "react";
+import { ProfileDescription } from "core/config/ProfileLifecycleManager";
 
 type Platform = "mac" | "linux" | "windows" | "unknown";
 
@@ -17,33 +23,24 @@ export function getPlatform(): Platform {
   }
 }
 
-export function isMetaEquivalentKeyPressed(event: {
-  metaKey: boolean;
-  ctrlKey: boolean;
-}): boolean {
+export function isMetaEquivalentKeyPressed({
+  metaKey,
+  ctrlKey,
+}: KeyboardEvent): boolean {
   const platform = getPlatform();
   switch (platform) {
     case "mac":
-      return event.metaKey;
+      return metaKey;
     case "linux":
     case "windows":
-      return event.ctrlKey;
+      return ctrlKey;
     default:
-      return event.metaKey;
+      return metaKey;
   }
 }
 
 export function getMetaKeyLabel(): string {
-  const platform = getPlatform();
-  switch (platform) {
-    case "mac":
-      return "⌘";
-    case "linux":
-    case "windows":
-      return "^";
-    default:
-      return "^";
-  }
+  return getPlatform() === "mac" ? "⌘" : "Ctrl";
 }
 
 export function getMetaKeyAndShortcutLabel(): ReactElement {
@@ -132,4 +129,8 @@ export function updatedObj(old: any, pathToValue: { [key: string]: any }) {
   }
 
   return newObject;
+}
+
+export function isLocalProfile(profile: ProfileDescription): boolean {
+  return profile.id === "local";
 }

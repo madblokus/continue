@@ -1,5 +1,7 @@
 const Types = `
 declare global {
+  import Parser from "web-tree-sitter";
+  import { GetGhTokenArgs } from "./protocol/ide";
   declare global {
     interface Window {
       ide?: "vscode";
@@ -28,6 +30,7 @@ declare global {
     content: string;
     startLine: number;
     endLine: number;
+    signature?: string;
     otherMetadata?: { [key: string]: any };
   }
 
@@ -42,7 +45,18 @@ declare global {
   export interface IndexingProgressUpdate {
     progress: number;
     desc: string;
+    shouldClearIndexes?: boolean;
+    status:
+      | "loading"
+      | "indexing"
+      | "done"
+      | "failed"
+      | "paused"
+      | "disabled"
+      | "cancelled";
+    debugInfo?: string;
   }
+<<<<<<< HEAD
 
 
   export interface LLMReturnValue {
@@ -63,6 +77,34 @@ declare global {
     get providerName(): ModelProvider;
 
 
+=======
+  
+  // This is more or less a V2 of IndexingProgressUpdate for docs etc.
+  export interface IndexingStatus {
+    id: string;
+    type: "docs";
+    progress: number;
+    description: string;
+    status: "indexing" | "complete" | "paused" | "failed" | "aborted" | "pending";
+    embeddingsProviderId: string;
+    isReindexing?: boolean;
+    debugInfo?: string;
+    title: string;
+    icon?: string;
+    url?: string;
+  }
+  
+  export type PromptTemplateFunction = (
+    history: ChatMessage[],
+    otherData: Record<string, string>,
+  ) => string | ChatMessage[];
+  
+  export type PromptTemplate = string | PromptTemplateFunction;
+  
+  export interface ILLM extends LLMOptions {
+    get providerName(): string;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     uniqueId: string;
     model: string;
 
@@ -70,44 +112,94 @@ declare global {
     title?: string;
     systemMessage?: string;
     contextLength: number;
+    maxStopWords?: number;
     completionOptions: CompletionOptions;
     requestOptions?: RequestOptions;
-    promptTemplates?: Record<string, string>;
+    promptTemplates?: Record<string, PromptTemplate>;
     templateMessages?: (messages: ChatMessage[]) => string;
     writeLog?: (str: string) => Promise<void>;
     llmRequestHook?: (model: string, prompt: string) => any;
     apiKey?: string;
     apiBase?: string;
+<<<<<<< HEAD
 
 
     engine?: string;
+=======
+    cacheBehavior?: CacheBehavior;
+  
+    deployment?: string;
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     apiVersion?: string;
     apiType?: string;
     region?: string;
     projectId?: string;
+<<<<<<< HEAD
 
 
     complete(prompt: string, options?: LLMFullCompletionOptions): Promise<string>;
 
 
+=======
+  
+    // Embedding options
+    embeddingId: string;
+    maxEmbeddingChunkSize: number;
+    maxEmbeddingBatchSize: number;
+  
+    complete(
+      prompt: string,
+      signal: AbortSignal,
+      options?: LLMFullCompletionOptions,
+    ): Promise<string>;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     streamComplete(
       prompt: string,
+      signal: AbortSignal,
       options?: LLMFullCompletionOptions,
+<<<<<<< HEAD
     ): AsyncGenerator<string, LLMReturnValue>;
 
 
+=======
+    ): AsyncGenerator<string, PromptLog>;
+  
+    streamFim(
+      prefix: string,
+      suffix: string,
+      signal: AbortSignal,
+      options?: LLMFullCompletionOptions,
+    ): AsyncGenerator<string, PromptLog>;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     streamChat(
       messages: ChatMessage[],
+      signal: AbortSignal,
       options?: LLMFullCompletionOptions,
+<<<<<<< HEAD
     ): AsyncGenerator<ChatMessage, LLMReturnValue>;
 
 
+=======
+    ): AsyncGenerator<ChatMessage, PromptLog>;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     chat(
       messages: ChatMessage[],
+      signal: AbortSignal,
       options?: LLMFullCompletionOptions,
     ): Promise<ChatMessage>;
+<<<<<<< HEAD
 
 
+=======
+  
+    embed(chunks: string[]): Promise<number[][]>;
+  
+    rerank(query: string, chunks: Chunk[]): Promise<number[]>;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     countTokens(text: string): number;
 
 
@@ -118,8 +210,14 @@ declare global {
 
 
     supportsPrefill(): boolean;
+<<<<<<< HEAD
 
 
+=======
+  
+    supportsFim(): boolean;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     listModels(): Promise<string[]>;
 
 
@@ -136,11 +234,12 @@ declare global {
 
 
   export interface ContextProviderDescription {
-    title: string;
+    title: ContextProviderName;
     displayTitle: string;
     description: string;
     renderInlineAs?: string;
     type: ContextProviderType;
+    dependsOnIndexing?: boolean;
   }
 
 
@@ -148,9 +247,10 @@ declare global {
 
 
   export interface ContextProviderExtras {
+    config: ContinueConfig;
     fullInput: string;
-    embeddingsProvider: EmbeddingsProvider;
-    reranker: Reranker | undefined;
+    embeddingsProvider: ILLM;
+    reranker: ILLM | undefined;
     llm: ILLM;
     ide: IDE;
     selectedCode: RangeInFile[];
@@ -159,6 +259,7 @@ declare global {
 
 
   export interface LoadSubmenuItemsArgs {
+    config: ContinueConfig;
     ide: IDE;
     fetch: FetchFunction;
   }
@@ -170,10 +271,12 @@ declare global {
     description?: string;
     renderInlineAs?: string;
     type?: ContextProviderType;
+  
     getContextItems(
       query: string,
       extras: ContextProviderExtras,
     ): Promise<ContextItem[]>;
+  
     loadSubmenuItems?: (
       args: LoadSubmenuItemsArgs,
     ) => Promise<ContextSubmenuItem[]>;
@@ -184,6 +287,15 @@ declare global {
     id: string;
     title: string;
     description: string;
+    icon?: string;
+    metadata?: any;
+  }
+  
+  export interface SiteIndexingConfig {
+    title: string;
+    startUrl: string;
+    maxDepth?: number;
+    faviconUrl?: string;
   }
 
 
@@ -199,6 +311,7 @@ declare global {
 
     loadSubmenuItems(args: LoadSubmenuItemsArgs): Promise<ContextSubmenuItem[]>;
   }
+<<<<<<< HEAD
 
 
   export interface PersistedSessionInfo {
@@ -210,6 +323,21 @@ declare global {
 
 
   export interface SessionInfo {
+=======
+  
+  export interface Checkpoint {
+    [filepath: string]: string;
+  }
+  
+  export interface Session {
+    sessionId: string;
+    title: string;
+    workspaceDirectory: string;
+    history: ChatHistoryItem[];
+  }
+  
+  export interface SessionMetadata {
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     sessionId: string;
     title: string;
     dateCreated: string;
@@ -221,8 +349,17 @@ declare global {
     filepath: string;
     range: Range;
   }
+<<<<<<< HEAD
 
 
+=======
+  
+  export interface Location {
+    filepath: string;
+    position: Position;
+  }
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface FileWithContents {
     filepath: string;
     contents: string;
@@ -233,10 +370,12 @@ declare global {
     start: Position;
     end: Position;
   }
+  
   export interface Position {
     line: number;
     character: number;
   }
+  
   export interface FileEdit {
     filepath: string;
     range: Range;
@@ -253,11 +392,17 @@ declare global {
   export interface CompletionOptions extends BaseCompletionOptions {
     model: string;
   }
+<<<<<<< HEAD
 
 
   export type ChatMessageRole = "user" | "assistant" | "system";
 
 
+=======
+  
+  export type ChatMessageRole = "user" | "assistant" | "system" | "tool";
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface MessagePart {
     type: "text" | "imageUrl";
     text?: string;
@@ -266,6 +411,7 @@ declare global {
 
 
   export type MessageContent = string | MessagePart[];
+<<<<<<< HEAD
 
 
   export interface ChatMessage {
@@ -274,43 +420,148 @@ declare global {
   }
 
 
+=======
+  
+  export interface ToolCall {
+    id: string;
+    type: "function";
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }
+  
+  export interface ToolCallDelta {
+    id?: string;
+    type?: "function";
+    function?: {
+      name?: string;
+      arguments?: string;
+    };
+  }
+  
+  export interface ToolResultChatMessage {
+    role: "tool";
+    content: string;
+    toolCallId: string;
+  }
+  
+  export interface UserChatMessage {
+    role: "user";
+    content: MessageContent;
+  }
+  
+  export interface AssistantChatMessage {
+    role: "assistant";
+    content: MessageContent;
+    toolCalls?: ToolCallDelta[];
+  }
+  
+  export interface SystemChatMessage {
+    role: "system";
+    content: string;
+  }
+  
+  export type ChatMessage =
+    | UserChatMessage
+    | AssistantChatMessage
+    | SystemChatMessage
+    | ToolResultChatMessage;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface ContextItemId {
     providerTitle: string;
     itemId: string;
   }
+<<<<<<< HEAD
 
 
+=======
+  
+  export type ContextItemUriTypes = "file" | "url";
+  
+  export interface ContextItemUri {
+    type: ContextItemUriTypes;
+    value: string;
+  }
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface ContextItem {
     content: string;
     name: string;
     description: string;
     editing?: boolean;
     editable?: boolean;
+    icon?: string;
+    uri?: ContextItemUri;
+    hidden?: boolean;
   }
+<<<<<<< HEAD
 
 
   export interface ContextItemWithId {
     content: string;
     name: string;
     description: string;
+=======
+  
+  export interface ContextItemWithId extends ContextItem {
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     id: ContextItemId;
-    editing?: boolean;
-    editable?: boolean;
   }
 
 
   export interface InputModifiers {
     useCodebase: boolean;
+    noContext: boolean;
+  }
+  
+  export interface SymbolWithRange extends RangeInFile {
+    name: string;
+    type: Parser.SyntaxNode["type"];
+    content: string;
+  }
+  
+  export type FileSymbolMap = Record<string, SymbolWithRange[]>;
+  
+  export interface PromptLog {
+    modelTitle: string;
+    completionOptions: CompletionOptions;
+    prompt: string;
+    completion: string;
+  }
+  
+  type MessageModes = "chat" | "edit";
+  
+  export type ToolStatus =
+    | "generating"
+    | "generated"
+    | "calling"
+    | "done"
+    | "canceled";
+  
+  // Will exist only on "assistant" messages with tool calls
+  interface ToolCallState {
+    toolCallId: string;
+    toolCall: ToolCall;
+    status: ToolStatus;
+    parsedArgs: any;
+    output?: ContextItem[];
   }
 
 
   export interface ChatHistoryItem {
     message: ChatMessage;
+    contextItems: ContextItemWithId[];
     editorState?: any;
     modifiers?: InputModifiers;
-    contextItems: ContextItemWithId[];
-    promptLogs?: [string, string][]; // [prompt, completion]
+    promptLogs?: PromptLog[];
+    toolCallState?: ToolCallState;
+    isGatheringContext?: boolean;
+    checkpoint?: Checkpoint;
+    isBeforeCheckpoint?: boolean;
   }
+<<<<<<< HEAD
 
 
   export type ChatHistory = ChatHistoryItem[];
@@ -323,8 +574,16 @@ declare global {
     log?: boolean;
 
 
+=======
+  
+  export interface LLMFullCompletionOptions extends BaseCompletionOptions {
+    log?: boolean;
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     model?: string;
   }
+  
+  export type ToastType = "info" | "error" | "warning";
+  
   export interface LLMOptions {
     model: string;
 
@@ -333,30 +592,65 @@ declare global {
     uniqueId?: string;
     systemMessage?: string;
     contextLength?: number;
+    maxStopWords?: number;
     completionOptions?: CompletionOptions;
     requestOptions?: RequestOptions;
     template?: TemplateType;
-    promptTemplates?: Record<string, string>;
+    promptTemplates?: Record<string, PromptTemplate>;
     templateMessages?: (messages: ChatMessage[]) => string;
     writeLog?: (str: string) => Promise<void>;
     llmRequestHook?: (model: string, prompt: string) => any;
     apiKey?: string;
+    aiGatewaySlug?: string;
     apiBase?: string;
+<<<<<<< HEAD
 
 
     useLegacyCompletionsEndpoint?: boolean;
 
 
+=======
+    cacheBehavior?: CacheBehavior;
+  
+    useLegacyCompletionsEndpoint?: boolean;
+  
+    // Embedding options
+    embeddingId?: string;
+    maxEmbeddingChunkSize?: number;
+    maxEmbeddingBatchSize?: number;
+  
+    // Cloudflare options
+    accountId?: string;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     // Azure options
-    engine?: string;
+    deployment?: string;
     apiVersion?: string;
     apiType?: string;
+<<<<<<< HEAD
 
 
     // GCP Options
+=======
+  
+    // AWS options
+    profile?: string;
+    modelArn?: string;
+  
+    // AWS and GCP Options
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     region?: string;
+  
+    // GCP Options
+    capabilities?: ModelCapability;
+  
+    // GCP and Watsonx Options
     projectId?: string;
+  
+    // IBM watsonx Options
+    deploymentId?: string;
   }
+  
   type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
     T,
     Exclude<keyof T, Keys>
@@ -370,11 +664,13 @@ declare global {
     options: LLMOptions;
     streamCompletion?: (
       prompt: string,
+      signal: AbortSignal,
       options: CompletionOptions,
       fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
     ) => AsyncGenerator<string>;
     streamChat?: (
       messages: ChatMessage[],
+      signal: AbortSignal,
       options: CompletionOptions,
       fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
     ) => AsyncGenerator<string>;
@@ -394,10 +690,16 @@ declare global {
 
 
   // IDE
+<<<<<<< HEAD
 
 
+=======
+  
+  export type DiffLineType = "new" | "old" | "same";
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface DiffLine {
-    type: "new" | "old" | "same";
+    type: DiffLineType;
     line: string;
   }
 
@@ -416,6 +718,7 @@ declare global {
 
 
   export type IdeType = "vscode" | "jetbrains";
+  
   export interface IdeInfo {
     ideType: IdeType;
     name: string;
@@ -434,49 +737,121 @@ declare global {
   export interface IndexTag extends BranchAndDir {
     artifactId: string;
   }
+<<<<<<< HEAD
 
 
+=======
+  
+  export enum FileType {
+    Unkown = 0,
+    File = 1,
+    Directory = 2,
+    SymbolicLink = 64,
+  }
+  
+  export interface IdeSettings {
+    remoteConfigServerUrl: string | undefined;
+    remoteConfigSyncPeriod: number;
+    userToken: string;
+    enableControlServerBeta: boolean;
+    pauseCodebaseIndexOnStart: boolean;
+  }
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface IDE {
     getIdeInfo(): Promise<IdeInfo>;
-    getDiff(): Promise<string>;
+  
+    getIdeSettings(): Promise<IdeSettings>;
+  
+    getDiff(includeUnstaged: boolean): Promise<string[]>;
+  
+    getClipboardContent(): Promise<{ text: string; copiedAt: string }>;
+  
     isTelemetryEnabled(): Promise<boolean>;
+  
     getUniqueId(): Promise<string>;
+  
     getTerminalContents(): Promise<string>;
+  
     getDebugLocals(threadIndex: number): Promise<string>;
+  
     getTopLevelCallStackSources(
       threadIndex: number,
       stackDepth: number,
     ): Promise<string[]>;
+  
     getAvailableThreads(): Promise<Thread[]>;
-    listFolders(): Promise<string[]>;
+  
     getWorkspaceDirs(): Promise<string[]>;
+  
     getWorkspaceConfigs(): Promise<ContinueRcJson[]>;
+  
+    fileExists(filepath: string): Promise<boolean>;
+  
     writeFile(path: string, contents: string): Promise<void>;
+  
     showVirtualFile(title: string, contents: string): Promise<void>;
-    getContinueDir(): Promise<string>;
     openFile(path: string): Promise<void>;
+  
+    openUrl(url: string): Promise<void>;
+  
     runCommand(command: string): Promise<void>;
+  
     saveFile(filepath: string): Promise<void>;
+  
     readFile(filepath: string): Promise<string>;
+  
     readRangeInFile(filepath: string, range: Range): Promise<string>;
+  
     showLines(
       filepath: string,
       startLine: number,
       endLine: number,
     ): Promise<void>;
-    showDiff(
-      filepath: string,
-      newContents: string,
-      stepIndex: number,
-    ): Promise<void>;
     getOpenFiles(): Promise<string[]>;
+  
+    getCurrentFile(): Promise<
+      | undefined
+      | {
+          isUntitled: boolean;
+          path: string;
+          contents: string;
+        }
+    >;
+  
     getPinnedFiles(): Promise<string[]>;
+  
     getSearchResults(query: string): Promise<string>;
-    subprocess(command: string): Promise<[string, string]>;
+  
+    subprocess(command: string, cwd?: string): Promise<[string, string]>;
+  
     getProblems(filepath?: string | undefined): Promise<Problem[]>;
+  
     getBranch(dir: string): Promise<string>;
+  
     getTags(artifactId: string): Promise<IndexTag[]>;
+  
     getRepoName(dir: string): Promise<string | undefined>;
+  
+    showToast(
+      type: ToastType,
+      message: string,
+      ...otherParams: any[]
+    ): Promise<any>;
+  
+    getGitRootPath(dir: string): Promise<string | undefined>;
+  
+    listDir(dir: string): Promise<[string, FileType][]>;
+  
+    getLastModified(files: string[]): Promise<{ [path: string]: number }>;
+  
+    getGitHubAuthToken(args: GetGhTokenArgs): Promise<string | undefined>;
+  
+    // LSP
+    gotoDefinition(location: Location): Promise<RangeInFile[]>;
+  
+    // Callbacks
+    onDidChangeActiveTextEditor(callback: (filepath: string) => void): void;
   }
 
 
@@ -524,9 +899,8 @@ declare global {
   type ContextProviderName =
     | "file"
     | "diff"
-    | "github"
     | "terminal"
-    | "locals"
+    | "debugger"
     | "open"
     | "google"
     | "search"
@@ -542,10 +916,24 @@ declare global {
     | "docs"
     | "gitlab-mr"
     | "os"
+<<<<<<< HEAD
     | "relativefilecontext"
     | "relativegitfilecontext";
 
 
+=======
+    | "currentFile"
+    | "greptile"
+    | "outline"
+    | "continue-proxy"
+    | "highlights"
+    | "file"
+    | "issue"
+    | "repo-map"
+    | "url"
+    | string;
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   type TemplateType =
     | "llama2"
     | "alpaca"
@@ -561,6 +949,7 @@ declare global {
     | "neural-chat"
     | "codellama-70b"
     | "llava"
+<<<<<<< HEAD
     | "gemma";
 
 
@@ -656,6 +1045,12 @@ declare global {
     | "pearai_model"
     | "perplexity";
 
+=======
+    | "gemma"
+    | "granite"
+    | "llama3";
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface RequestOptions {
     timeout?: number;
     verifySsl?: boolean;
@@ -663,6 +1058,19 @@ declare global {
     proxy?: string;
     headers?: { [key: string]: string };
     extraBodyProperties?: { [key: string]: any };
+    noProxy?: string[];
+    clientCertificate?: ClientCertificateOptions;
+  }
+  
+  export interface CacheBehavior {
+    cacheSystemMessage?: boolean;
+    cacheConversation?: boolean;
+  }
+  
+  export interface ClientCertificateOptions {
+    cert: string;
+    key: string;
+    passphrase?: string;
   }
 
 
@@ -690,8 +1098,43 @@ declare global {
     prompt: string;
     description: string;
   }
+<<<<<<< HEAD
 
 
+=======
+  
+  interface Prediction {
+    type: "content";
+    content:
+      | string
+      | {
+          type: "text";
+          text: string;
+        }[];
+  }
+  
+  export interface ToolExtras {
+    ide: IDE;
+    llm: ILLM;
+    fetch: FetchFunction;
+  }
+  
+  export interface Tool {
+    type: "function";
+    function: {
+      name: string;
+      description?: string;
+      parameters?: Record<string, any>;
+      strict?: boolean | null;
+    };
+  
+    displayTitle: string;
+    wouldLikeTo: string;
+    readonly: boolean;
+    uri?: string;
+  }
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   interface BaseCompletionOptions {
     temperature?: number;
     topP?: number;
@@ -703,26 +1146,37 @@ declare global {
     stop?: string[];
     maxTokens?: number;
     numThreads?: number;
+    useMmap?: boolean;
     keepAlive?: number;
     raw?: boolean;
     stream?: boolean;
+    prediction?: Prediction;
+    tools?: Tool[];
+  }
+  
+  export interface ModelCapability {
+    uploadImage?: boolean;
   }
 
 
   export interface ModelDescription {
     title: string;
-    provider: ModelProvider;
+    provider: string;
     model: string;
     apiKey?: string;
     apiBase?: string;
     refreshToken?: string;
     contextLength?: number;
+    maxStopWords?: number;
     template?: TemplateType;
     completionOptions?: BaseCompletionOptions;
     systemMessage?: string;
     requestOptions?: RequestOptions;
     promptTemplates?: { [key: string]: string };
+    capabilities?: ModelCapability;
+    cacheBehavior?: CacheBehavior;
   }
+<<<<<<< HEAD
 
 
   export type EmbeddingsProviderName =
@@ -734,18 +1188,35 @@ declare global {
     | "free-trial";
 
 
+=======
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface EmbedOptions {
     apiBase?: string;
     refreshToken?: string;
     apiKey?: string;
     model?: string;
+    deployment?: string;
+    apiType?: string;
+    apiVersion?: string;
     requestOptions?: RequestOptions;
+    maxChunkSize?: number;
+    maxBatchSize?: number;
+    // AWS options
+    profile?: string;
+  
+    // AWS and GCP Options
+    region?: string;
+  
+    // GCP and Watsonx Options
+    projectId?: string;
   }
 
 
   export interface EmbeddingsProviderDescription extends EmbedOptions {
-    provider: EmbeddingsProviderName;
+    provider: string;
   }
+<<<<<<< HEAD
 
 
   export interface EmbeddingsProvider {
@@ -764,34 +1235,63 @@ declare global {
 
 
   export interface Reranker {
+=======
+  
+  export interface RerankerDescription {
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     name: string;
-    rerank(query: string, chunks: Chunk[]): Promise<number[]>;
+    params?: { [key: string]: any };
   }
 
 
   export interface TabAutocompleteOptions {
     disable: boolean;
-    useCopyBuffer: boolean;
-    useFileSuffix: boolean;
     maxPromptTokens: number;
     debounceDelay: number;
     maxSuffixPercentage: number;
     prefixPercentage: number;
+    transform?: boolean;
     template?: string;
     multilineCompletions: "always" | "never" | "auto";
     slidingWindowPrefixPercentage: number;
     slidingWindowSize: number;
-    maxSnippetPercentage: number;
-    recentlyEditedSimilarityThreshold: number;
     useCache: boolean;
     onlyMyCode: boolean;
-    useOtherFiles: boolean;
+    useRecentlyEdited: boolean;
     disableInFiles?: string[];
+    useImports?: boolean;
+    showWhateverWeHaveAtXMs?: number;
+  }
+  
+  interface StdioOptions {
+    type: "stdio";
+    command: string;
+    args: string[];
+  }
+  
+  interface WebSocketOptions {
+    type: "websocket";
+    url: string;
+  }
+  
+  interface SSEOptions {
+    type: "sse";
+    url: string;
+  }
+  
+  type TransportOptions = StdioOptions | WebSocketOptions | SSEOptions;
+  
+  export interface MCPOptions {
+    transport: TransportOptions;
   }
 
 
   export interface ContinueUIConfig {
     codeBlockToolbarPosition?: "top" | "bottom";
+    fontSize?: number;
+    displayRawMarkdown?: boolean;
+    showChatScrollbar?: boolean;
+    codeWrap?: boolean;
   }
 
 
@@ -802,19 +1302,123 @@ declare global {
     optimize?: string;
     fixGrammar?: string;
   }
+<<<<<<< HEAD
 
 
   interface ModelRoles {
+=======
+  
+  interface ExperimentalModelRoles {
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     inlineEdit?: string;
+    applyCodeBlock?: string;
+    repoMapFileSelection?: string;
   }
+<<<<<<< HEAD
 
 
+=======
+  
+  export type EditStatus =
+    | "not-started"
+    | "streaming"
+    | "accepting"
+    | "accepting:full-diff"
+    | "done";
+  
+  export type ApplyStateStatus =
+    | "streaming" // Changes are being applied to the file
+    | "done" // All changes have been applied, awaiting user to accept/reject
+    | "closed"; // All changes have been applied. Note that for new files, we immediately set the status to "closed"
+  
+  export interface ApplyState {
+    streamId: string;
+    status?: ApplyStateStatus;
+    numDiffs?: number;
+    filepath?: string;
+    fileContent?: string;
+  }
+  
+  export interface RangeInFileWithContents {
+    filepath: string;
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+    contents: string;
+  }
+  
+  export type CodeToEdit = RangeInFileWithContents | FileWithContents;
+  
+  /**
+   * Represents the configuration for a quick action in the Code Lens.
+   * Quick actions are custom commands that can be added to function and class declarations.
+   */
+  interface QuickActionConfig {
+    /**
+     * The title of the quick action that will display in the Code Lens.
+     */
+    title: string;
+  
+    /**
+     * The prompt that will be sent to the model when the quick action is invoked,
+     * with the function or class body concatenated.
+     */
+    prompt: string;
+  
+    /**
+     * If \`true\`, the result of the quick action will be sent to the chat panel.
+     * If \`false\`, the streamed result will be inserted into the document.
+     *
+     * Defaults to \`false\`.
+     */
+    sendToChat: boolean;
+  }
+  
+  export type DefaultContextProvider = ContextProviderWithParams & {
+    query?: string;
+  };
+  
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   interface ExperimentalConfig {
     contextMenuPrompts?: ContextMenuConfig;
-    modelRoles?: ModelRoles;
+    modelRoles?: ExperimentalModelRoles;
+    defaultContext?: DefaultContextProvider[];
+    promptPath?: string;
+  
+    /**
+     * Quick actions are a way to add custom commands to the Code Lens of
+     * function and class declarations.
+     */
+    quickActions?: QuickActionConfig[];
+  
+    /**
+     * Automatically read LLM chat responses aloud using system TTS models
+     */
+    readResponseTTS?: boolean;
+  
+    /**
+     * If set to true, we will attempt to pull down and install an instance of Chromium
+     * that is compatible with the current version of Puppeteer.
+     * This is needed to crawl a large number of documentation sites that are dynamically rendered.
+     */
+    useChromiumForDocsCrawling?: boolean;
+    useTools?: boolean;
+    modelContextProtocolServers?: MCPOptions[];
   }
+<<<<<<< HEAD
 
 
+=======
+  
+  interface AnalyticsConfig {
+    type: string;
+    url?: string;
+    clientKey?: string;
+  }
+  
+  // config.json
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface SerializedContinueConfig {
     env?: string[];
     allowAnonymousTelemetry?: boolean;
@@ -829,11 +1433,13 @@ declare global {
     disableSessionTitles?: boolean;
     userToken?: string;
     embeddingsProvider?: EmbeddingsProviderDescription;
-    tabAutocompleteModel?: ModelDescription;
+    tabAutocompleteModel?: ModelDescription | ModelDescription[];
     tabAutocompleteOptions?: Partial<TabAutocompleteOptions>;
     ui?: ContinueUIConfig;
     reranker?: RerankerDescription;
     experimental?: ExperimentalConfig;
+    analytics?: AnalyticsConfig;
+    docs?: SiteIndexingConfig[];
   }
 
 
@@ -843,8 +1449,13 @@ declare global {
   export type ContinueRcJson = Partial<SerializedContinueConfig> & {
     mergeBehavior: ConfigMergeType;
   };
+<<<<<<< HEAD
 
 
+=======
+  
+  // config.ts - give users simplified interfaces
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface Config {
     /** If set to true, Continue will collect anonymous usage data to improve the product. If set to false, we will collect nothing. Read here to learn more: https://trypear.ai/telemetry */
     allowAnonymousTelemetry?: boolean;
@@ -872,20 +1483,30 @@ declare global {
     /** An optional token to identify a user. Not used by Continue unless you write custom coniguration that requires such a token */
     userToken?: string;
     /** The provider used to calculate embeddings. If left empty, Continue will use transformers.js to calculate the embeddings with all-MiniLM-L6-v2 */
-    embeddingsProvider?: EmbeddingsProviderDescription | EmbeddingsProvider;
+    embeddingsProvider?: EmbeddingsProviderDescription | ILLM;
     /** The model that Continue will use for tab autocompletions. */
-    tabAutocompleteModel?: CustomLLM | ModelDescription;
+    tabAutocompleteModel?:
+      | CustomLLM
+      | ModelDescription
+      | (CustomLLM | ModelDescription)[];
     /** Options for tab autocomplete */
     tabAutocompleteOptions?: Partial<TabAutocompleteOptions>;
     /** UI styles customization */
     ui?: ContinueUIConfig;
     /** Options for the reranker */
-    reranker?: RerankerDescription | Reranker;
+    reranker?: RerankerDescription | ILLM;
     /** Experimental configuration */
     experimental?: ExperimentalConfig;
+    /** Analytics configuration */
+    analytics?: AnalyticsConfig;
   }
+<<<<<<< HEAD
 
 
+=======
+  
+  // in the actual Continue source code
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   export interface ContinueConfig {
     allowAnonymousTelemetry?: boolean;
     models: ILLM[];
@@ -897,12 +1518,15 @@ declare global {
     disableSessionTitles?: boolean;
     disableIndexing?: boolean;
     userToken?: string;
-    embeddingsProvider: EmbeddingsProvider;
-    tabAutocompleteModel?: ILLM;
+    embeddingsProvider: ILLM;
+    tabAutocompleteModels?: ILLM[];
     tabAutocompleteOptions?: Partial<TabAutocompleteOptions>;
     ui?: ContinueUIConfig;
-    reranker?: Reranker;
+    reranker?: ILLM;
     experimental?: ExperimentalConfig;
+    analytics?: AnalyticsConfig;
+    docs?: SiteIndexingConfig[];
+    tools: Tool[];
   }
 
 
@@ -921,8 +1545,52 @@ declare global {
     ui?: ContinueUIConfig;
     reranker?: RerankerDescription;
     experimental?: ExperimentalConfig;
+<<<<<<< HEAD
   }
   }
+=======
+    analytics?: AnalyticsConfig;
+    docs?: SiteIndexingConfig[];
+    tools: Tool[];
+  }
+  
+  // DOCS SUGGESTIONS AND PACKAGE INFO
+  export interface FilePathAndName {
+    path: string;
+    name: string;
+  }
+  
+  export interface PackageFilePathAndName extends FilePathAndName {
+    packageRegistry: string; // e.g. npm, pypi
+  }
+  
+  export type ParsedPackageInfo = {
+    name: string;
+    packageFile: PackageFilePathAndName;
+    language: string;
+    version: string;
+  };
+  
+  export type PackageDetails = {
+    docsLink?: string;
+    docsLinkWarning?: string;
+    title?: string;
+    description?: string;
+    repo?: string;
+    license?: string;
+  };
+  
+  export type PackageDetailsSuccess = PackageDetails & {
+    docsLink: string;
+  };
+  
+  export type PackageDocsResult = {
+    packageInfo: ParsedPackageInfo;
+  } & (
+    | { error: string; details?: never }
+    | { details: PackageDetailsSuccess; error?: never }
+  );
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 }
 
 export {};

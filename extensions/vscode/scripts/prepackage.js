@@ -1,12 +1,16 @@
 const fs = require("fs");
-const ncp = require("ncp").ncp;
 const path = require("path");
+
+const ncp = require("ncp").ncp;
 const { rimrafSync } = require("rimraf");
+
 const {
   validateFilesPresent,
   execCmdSync,
   autodetectPlatformAndArch,
 } = require("../../../scripts/util/index");
+
+const { copyConfigSchema } = require("./utils");
 
 // Clear folders that will be packaged to ensure clean slate
 rimrafSync(path.join(__dirname, "..", "bin"));
@@ -45,9 +49,21 @@ console.log("[info] Using target: ", target);
 
 const exe = os === "win32" ? ".exe" : "";
 
+const isInGitHubAction = !!process.env.GITHUB_ACTIONS;
+
+const isArmTarget =
+  target === "darwin-arm64" ||
+  target === "linux-arm64" ||
+  target === "win32-arm64";
+
+const isWinTarget = target?.startsWith("win");
+const isLinuxTarget = target?.startsWith("linux");
+const isMacTarget = target?.startsWith("darwin");
+
 (async () => {
   console.log("[info] Packaging extension for target ", target);
 
+<<<<<<< HEAD
   // Copy config_schema.json to config.json in docs and intellij
   fs.copyFileSync(
     "config_schema.json",
@@ -75,6 +91,10 @@ const exe = os === "win32" ? ".exe" : "";
       "If set to 'merge', .pearairc.json will be applied on top of config.json (arrays and objects are merged). If set to 'overwrite', then every top-level property of .pearairc.json will overwrite that property from config.json.",
   };
   fs.writeFileSync("continue_rc_schema.json", JSON.stringify(schema, null, 2));
+=======
+  // Copy config schemas to intellij
+  copyConfigSchema();
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
   if (!process.cwd().endsWith("vscode")) {
     // This is sometimes run from root dir instead (e.g. in VS Code tasks)
@@ -90,11 +110,11 @@ const exe = os === "win32" ? ".exe" : "";
   execCmdSync("npm install");
   console.log("[info] npm install in gui completed");
 
-  if (ghAction()) {
+  if (isInGitHubAction) {
     execCmdSync("npm run build");
   }
 
-  // Copy over the dist folder to the Intellij extension //
+  // Copy over the dist folder to the JetBrains extension //
   const intellijExtensionWebviewPath = path.join(
     "..",
     "extensions",
@@ -114,7 +134,7 @@ const exe = os === "win32" ? ".exe" : "";
     ncp("dist", intellijExtensionWebviewPath, (error) => {
       if (error) {
         console.warn(
-          "[error] Error copying React app build to Intellij extension: ",
+          "[error] Error copying React app build to JetBrains extension: ",
           error,
         );
         reject(error);
@@ -130,13 +150,7 @@ const exe = os === "win32" ? ".exe" : "";
   fs.copyFileSync("tmp_index.html", indexHtmlPath);
   fs.unlinkSync("tmp_index.html");
 
-  // Copy over other misc. files
-  fs.copyFileSync(
-    "../extensions/vscode/gui/onigasm.wasm",
-    path.join(intellijExtensionWebviewPath, "onigasm.wasm"),
-  );
-
-  console.log("[info] Copied gui build to Intellij extension");
+  console.log("[info] Copied gui build to JetBrains extension");
 
   // Then copy over the dist folder to the VSCode extension //
   const vscodeGuiPath = path.join("../extensions/vscode/gui");
@@ -245,9 +259,15 @@ const exe = os === "win32" ? ".exe" : "";
     "../../../core/vendor/tree-sitter.wasm",
     "../../../core/llm/llamaTokenizerWorkerPool.mjs",
     "../../../core/llm/llamaTokenizer.mjs",
+    "../../../core/llm/tiktokenWorkerPool.mjs",
+    "../../../core/util/start_ollama.sh",
   ];
+
   for (const f of filesToCopy) {
-    fs.copyFileSync(path.join(__dirname, f), path.join(__dirname, "..", "out", path.basename(f)));
+    fs.copyFileSync(
+      path.join(__dirname, f),
+      path.join(__dirname, "..", "out", path.basename(f)),
+    );
     console.log(`[info] Copied ${path.basename(f)}`);
   }
 
@@ -279,22 +299,6 @@ const exe = os === "win32" ? ".exe" : "";
       },
     );
   });
-
-  function ghAction() {
-    return !!process.env.GITHUB_ACTIONS;
-  }
-
-  function isArm() {
-    return (
-      target === "darwin-arm64" ||
-      target === "linux-arm64" ||
-      target === "win32-arm64"
-    );
-  }
-
-  function isWin() {
-    return target?.startsWith("win");
-  }
 
   async function installNodeModuleInTempDirAndCopyToCurrent(
     packageName,
@@ -359,42 +363,40 @@ const exe = os === "win32" ? ".exe" : "";
   }
 
   // GitHub Actions doesn't support ARM, so we need to download pre-saved binaries
-  if (ghAction() && isArm()) {
-    // sqlite3
-    if (!isWin()) {
-      // Neither lancedb nor sqlite3 have pre-built windows arm64 binaries
+  // 02/07/25 - the above comment is out of date, there is now support for ARM runners on GitHub Actions
+  if (isInGitHubAction && isArmTarget) {
+    // lancedb binary
+    const packageToInstall = {
+      "darwin-arm64": "@lancedb/vectordb-darwin-arm64",
+      "linux-arm64": "@lancedb/vectordb-linux-arm64-gnu",
+      "win32-arm64": "@lancedb/vectordb-win32-arm64-msvc",
+    }[target];
+    console.log(
+      "[info] Downloading pre-built lancedb binary: " + packageToInstall,
+    );
 
-      // lancedb binary
-      const packageToInstall = {
-        "darwin-arm64": "@lancedb/vectordb-darwin-arm64",
-        "linux-arm64": "@lancedb/vectordb-linux-arm64-gnu",
-      }[target];
-      console.log(
-        "[info] Downloading pre-built lancedb binary: " + packageToInstall,
-      );
+    await installNodeModuleInTempDirAndCopyToCurrent(
+      packageToInstall,
+      "@lancedb",
+    );
 
-      await installNodeModuleInTempDirAndCopyToCurrent(
-        packageToInstall,
-        "@lancedb",
-      );
-
-      // Replace the installed with pre-built
-      console.log("[info] Downloading pre-built sqlite3 binary");
-      rimrafSync("../../core/node_modules/sqlite3/build");
-      const downloadUrl = {
-        "darwin-arm64":
-          "https://github.com/TryGhost/node-sqlite3/releases/download/v5.1.7/sqlite3-v5.1.7-napi-v6-darwin-arm64.tar.gz",
-        "linux-arm64":
-          "https://github.com/TryGhost/node-sqlite3/releases/download/v5.1.7/sqlite3-v5.1.7-napi-v3-linux-arm64.tar.gz",
-      }[target];
-      execCmdSync(
-        `curl -L -o ../../core/node_modules/sqlite3/build.tar.gz ${downloadUrl}`,
-      );
-      execCmdSync(
-        "cd ../../core/node_modules/sqlite3 && tar -xvzf build.tar.gz",
-      );
-      fs.unlinkSync("../../core/node_modules/sqlite3/build.tar.gz");
-    }
+    // Replace the installed with pre-built
+    console.log("[info] Downloading pre-built sqlite3 binary");
+    rimrafSync("../../core/node_modules/sqlite3/build");
+    const downloadUrl = {
+      "darwin-arm64":
+        "https://github.com/TryGhost/node-sqlite3/releases/download/v5.1.7/sqlite3-v5.1.7-napi-v6-darwin-arm64.tar.gz",
+      "linux-arm64":
+        "https://github.com/TryGhost/node-sqlite3/releases/download/v5.1.7/sqlite3-v5.1.7-napi-v3-linux-arm64.tar.gz",
+      // node-sqlite3 doesn't have a pre-built binary for win32-arm64
+      "win32-arm64":
+        "https://continue-server-binaries.s3.us-west-1.amazonaws.com/win32-arm64/node_sqlite3.tar.gz",
+    }[target];
+    execCmdSync(
+      `curl -L -o ../../core/node_modules/sqlite3/build.tar.gz ${downloadUrl}`,
+    );
+    execCmdSync("cd ../../core/node_modules/sqlite3 && tar -xvzf build.tar.gz");
+    fs.unlinkSync("../../core/node_modules/sqlite3/build.tar.gz");
 
     // Download and unzip esbuild
     console.log("[info] Downloading pre-built esbuild binary");
@@ -467,6 +469,7 @@ const exe = os === "win32" ? ".exe" : "";
     "@vscode/ripgrep",
     "workerpool",
   ];
+
   fs.mkdirSync("out/node_modules", { recursive: true });
 
   await Promise.all(
@@ -511,21 +514,25 @@ const exe = os === "win32" ? ".exe" : "";
     // onnx runtime bindngs
     `bin/napi-v3/${os}/${arch}/onnxruntime_binding.node`,
     `bin/napi-v3/${os}/${arch}/${
-      os === "darwin"
+      isMacTarget
         ? "libonnxruntime.1.14.0.dylib"
-        : os === "linux"
+        : isLinuxTarget
           ? "libonnxruntime.so.1.14.0"
           : "onnxruntime.dll"
     }`,
-    "builtin-themes/dark_modern.json",
 
     // Code/styling for the sidebar
     "gui/assets/index.js",
     "gui/assets/index.css",
 
     // Tutorial
+<<<<<<< HEAD
     "media/welcome.md",
     "pearai_tutorial.py",
+=======
+    "media/move-chat-panel-right.md",
+    "continue_tutorial.py",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     "config_schema.json",
 
     // Embeddings model
@@ -557,11 +564,7 @@ const exe = os === "win32" ? ".exe" : "";
           ? "win32-x64/esbuild.exe"
           : `${target}/bin/esbuild`
     }`,
-    `out/node_modules/@lancedb/vectordb-${
-      os === "win32"
-        ? "win32-x64-msvc"
-        : `${target}${os === "linux" ? "-gnu" : ""}`
-    }/index.node`,
+    `out/node_modules/@lancedb/vectordb-${target}${isWinTarget ? "-msvc" : ""}${isLinuxTarget ? "-gnu" : ""}/index.node`,
     `out/node_modules/esbuild/lib/main.js`,
     `out/node_modules/esbuild/bin/esbuild`,
   ]);

@@ -1,4 +1,8 @@
+import fs from "fs";
+
 import ignore from "ignore";
+
+import { getGlobalContinueIgnorePath } from "../util/paths";
 
 export const DEFAULT_IGNORE_FILETYPES = [
   "*.DS_Store",
@@ -62,12 +66,24 @@ export const DEFAULT_IGNORE_FILETYPES = [
   "*.env",
   "*.gitignore",
   "*.gitkeep",
+<<<<<<< HEAD
   "*.pearaiignore",
   "config.json",
+=======
+  "*.continueignore",
+  "config.json",
+  "config.yaml",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   "*.csv",
   "*.uasset",
   "*.pdb",
   "*.bin",
+<<<<<<< HEAD
+=======
+  "*.pag",
+  "*.swp",
+  "*.jsonl",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   // "*.prompt", // can be incredibly confusing for the LLM to have another set of instructions injected into the prompt
 ];
 
@@ -95,6 +111,7 @@ export const DEFAULT_IGNORE_DIRS = [
   "__pycache__/",
   "site-packages/",
   ".gradle/",
+  ".mvn/",
   ".cache/",
   "gems/",
   "vendor/",
@@ -111,3 +128,11 @@ export function gitIgArrayFromFile(file: string) {
     .map((l) => l.trim()) // Remove whitespace
     .filter((l) => !/^#|^$/.test(l)); // Remove empty lines
 }
+<<<<<<< HEAD
+=======
+
+export const getGlobalContinueIgArray = () => {
+  const contents = fs.readFileSync(getGlobalContinueIgnorePath(), "utf8");
+  return gitIgArrayFromFile(contents);
+};
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d

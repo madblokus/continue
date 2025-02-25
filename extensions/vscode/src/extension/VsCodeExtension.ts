@@ -1,14 +1,23 @@
+<<<<<<< HEAD
 // Note: This file has been modified significantly from its original contents. New commands have been added, and there has been renaming from Continue to PearAI. pearai-submodule is a fork of Continue (https://github.com/continuedev/continue).
+=======
+import fs from "fs";
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
 import { IContextProvider } from "core";
 import { ConfigHandler } from "core/config/ConfigHandler";
+import { EXTENSION_NAME, getControlPlaneEnv } from "core/control-plane/env";
 import { Core } from "core/core";
 import { FromCoreProtocol, ToCoreProtocol } from "core/protocol";
-import { InProcessMessenger } from "core/util/messenger";
-import { getConfigJsonPath, getConfigTsPath } from "core/util/paths";
-import fs from "fs";
+import { InProcessMessenger } from "core/protocol/messenger";
+import {
+  getConfigJsonPath,
+  getConfigTsPath,
+  getConfigYamlPath,
+} from "core/util/paths";
 import { v4 as uuidv4 } from "uuid";
 import * as vscode from "vscode";
+
 import { ContinueCompletionProvider } from "../autocomplete/completionProvider";
 import {
   monitorBatteryChanges,
@@ -17,11 +26,10 @@ import {
 } from "../autocomplete/statusBar";
 import { registerAllCommands } from "../commands";
 import { ContinueGUIWebviewViewProvider } from "../ContinueGUIWebviewViewProvider";
-import { registerDebugTracker } from "../debug/debug";
-import { DiffManager } from "../diff/horizontal";
-import { VerticalPerLineDiffManager } from "../diff/verticalPerLine/manager";
-import { VsCodeIde } from "../ideProtocol";
+import { VerticalDiffManager } from "../diff/vertical/manager";
 import { registerAllCodeLensProviders } from "../lang-server/codeLens";
+import { registerAllPromptFilesCompletionProviders } from "../lang-server/promptFileCompletions";
+import EditDecorationManager from "../quickEdit/EditDecorationManager";
 import { QuickEdit } from "../quickEdit/QuickEditQuickPick";
 import { setupRemoteConfigSync } from "../stubs/activation";
 import {
@@ -29,10 +37,14 @@ import {
   WorkOsAuthProvider,
 } from "../stubs/WorkOsAuthProvider";
 import { Battery } from "../util/battery";
+import { FileSearch } from "../util/FileSearch";
 import { TabAutocompleteModel } from "../util/loadAutocompleteModel";
-import type { VsCodeWebviewProtocol } from "../webviewProtocol";
+import { VsCodeIde } from "../VsCodeIde";
+
 import { VsCodeMessenger } from "./VsCodeMessenger";
 import { PEARAI_CHAT_VIEW_ID, PEARAI_MEM0_VIEW_ID, PEARAI_SEARCH_VIEW_ID } from "../util/pearai/pearaiViewTypes";
+
+import type { VsCodeWebviewProtocol } from "../webviewProtocol";
 
 export class VsCodeExtension {
   // Currently some of these are public so they can be used in testing (test/test-suites)
@@ -43,18 +55,26 @@ export class VsCodeExtension {
   private tabAutocompleteModel: TabAutocompleteModel;
   private sidebar: ContinueGUIWebviewViewProvider;
   private windowId: string;
-  private diffManager: DiffManager;
-  private verticalDiffManager: VerticalPerLineDiffManager;
+  private editDecorationManager: EditDecorationManager;
+  private verticalDiffManager: VerticalDiffManager;
   webviewProtocolPromise: Promise<VsCodeWebviewProtocol>;
   private core: Core;
   private battery: Battery;
   private workOsAuthProvider: WorkOsAuthProvider;
+  private fileSearch: FileSearch;
 
   constructor(context: vscode.ExtensionContext) {
     // Register auth provider
     this.workOsAuthProvider = new WorkOsAuthProvider(context);
+<<<<<<< HEAD
     // this.workOsAuthProvider.initialize();
     // context.subscriptions.push(this.workOsAuthProvider);
+=======
+    this.workOsAuthProvider.refreshSessions();
+    context.subscriptions.push(this.workOsAuthProvider);
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
+
+    this.editDecorationManager = new EditDecorationManager(context);
 
     let resolveWebviewProtocol: any = undefined;
     this.webviewProtocolPromise = new Promise<VsCodeWebviewProtocol>(
@@ -62,14 +82,13 @@ export class VsCodeExtension {
         resolveWebviewProtocol = resolve;
       },
     );
-    this.diffManager = new DiffManager(context);
-    this.ide = new VsCodeIde(this.diffManager, this.webviewProtocolPromise);
+    this.ide = new VsCodeIde(this.webviewProtocolPromise, context);
     this.extensionContext = context;
     this.windowId = uuidv4();
 
     // Dependencies of core
     let resolveVerticalDiffManager: any = undefined;
-    const verticalDiffManagerPromise = new Promise<VerticalPerLineDiffManager>(
+    const verticalDiffManagerPromise = new Promise<VerticalDiffManager>(
       (resolve) => {
         resolveVerticalDiffManager = resolve;
       },
@@ -132,6 +151,7 @@ export class VsCodeExtension {
       verticalDiffManagerPromise,
       configHandlerPromise,
       this.workOsAuthProvider,
+      this.editDecorationManager,
     );
 
     this.core = new Core(inProcessMessenger, this.ide, async (log: string) => {
@@ -146,9 +166,11 @@ export class VsCodeExtension {
     this.configHandler = this.core.configHandler;
     resolveConfigHandler?.(this.configHandler);
 
-    this.configHandler.reloadConfig();
-    this.verticalDiffManager = new VerticalPerLineDiffManager(
+    this.configHandler.loadConfig();
+    this.verticalDiffManager = new VerticalDiffManager(
       this.configHandler,
+      this.sidebar.webviewProtocol,
+      this.editDecorationManager,
     );
     resolveVerticalDiffManager?.(this.verticalDiffManager);
     this.tabAutocompleteModel = new TabAutocompleteModel(this.configHandler);
@@ -157,6 +179,7 @@ export class VsCodeExtension {
       this.configHandler.reloadConfig.bind(this.configHandler),
     );
 
+<<<<<<< HEAD
     // handleURI
     // This is the entry point when user signs in from web app
     context.subscriptions.push(
@@ -186,10 +209,12 @@ export class VsCodeExtension {
     this.diffManager.webviewProtocol = this.sidebar.webviewProtocol;
 
     this.configHandler.loadConfig().then((config) => {
+=======
+    this.configHandler.loadConfig().then(({ config }) => {
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       const { verticalDiffCodeLens } = registerAllCodeLensProviders(
         context,
-        this.diffManager,
-        this.verticalDiffManager.filepathToCodeLens,
+        this.verticalDiffManager.fileUriToCodeLens,
         config,
       );
 
@@ -197,21 +222,31 @@ export class VsCodeExtension {
         verticalDiffCodeLens.refresh.bind(verticalDiffCodeLens);
     });
 
-    this.configHandler.onConfigUpdate((newConfig) => {
-      this.sidebar.webviewProtocol?.request("configUpdate", undefined);
+    this.configHandler.onConfigUpdate(
+      async ({ config: newConfig, errors, configLoadInterrupted }) => {
+        if (configLoadInterrupted) {
+          // Show error in status bar
+          setupStatusBar(undefined, undefined, true);
+        } else if (newConfig) {
+          setupStatusBar(undefined, undefined, false);
 
-      this.tabAutocompleteModel.clearLlm();
+          this.tabAutocompleteModel.clearLlm();
 
-      registerAllCodeLensProviders(
-        context,
-        this.diffManager,
-        this.verticalDiffManager.filepathToCodeLens,
-        newConfig,
-      );
-    });
+          registerAllCodeLensProviders(
+            context,
+            this.verticalDiffManager.fileUriToCodeLens,
+            newConfig,
+          );
+        }
+      },
+    );
 
     // Tab autocomplete
+<<<<<<< HEAD
     const config = vscode.workspace.getConfiguration("pearai");
+=======
+    const config = vscode.workspace.getConfiguration(EXTENSION_NAME);
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     const enabled = config.get<boolean>("enableTabAutocomplete");
 
     // Register inline completion provider
@@ -225,6 +260,7 @@ export class VsCodeExtension {
           this.configHandler,
           this.ide,
           this.tabAutocompleteModel,
+          this.sidebar.webviewProtocol,
         ),
       ),
     );
@@ -234,12 +270,21 @@ export class VsCodeExtension {
     context.subscriptions.push(this.battery);
     context.subscriptions.push(monitorBatteryChanges(this.battery));
 
+    // FileSearch
+    this.fileSearch = new FileSearch(this.ide);
+    registerAllPromptFilesCompletionProviders(
+      context,
+      this.fileSearch,
+      this.ide,
+    );
+
     const quickEdit = new QuickEdit(
       this.verticalDiffManager,
       this.configHandler,
       this.sidebar.webviewProtocol,
       this.ide,
       context,
+      this.fileSearch,
     );
 
     // Commands
@@ -249,23 +294,41 @@ export class VsCodeExtension {
       context,
       this.sidebar,
       this.configHandler,
-      this.diffManager,
       this.verticalDiffManager,
       this.core.continueServerClientPromise,
       this.battery,
       quickEdit,
       this.core,
+      this.editDecorationManager,
     );
 
-    registerDebugTracker(this.sidebar.webviewProtocol, this.ide);
+    // Disabled due to performance issues
+    // registerDebugTracker(this.sidebar.webviewProtocol, this.ide);
 
     // Listen for file saving - use global file watcher so that changes
     // from outside the window are also caught
     fs.watchFile(getConfigJsonPath(), { interval: 1000 }, async (stats) => {
+      if (stats.size === 0) {
+        return;
+      }
       await this.configHandler.reloadConfig();
     });
 
+    fs.watchFile(
+      getConfigYamlPath("vscode"),
+      { interval: 1000 },
+      async (stats) => {
+        if (stats.size === 0) {
+          return;
+        }
+        await this.configHandler.reloadConfig();
+      },
+    );
+
     fs.watchFile(getConfigTsPath(), { interval: 1000 }, (stats) => {
+      if (stats.size === 0) {
+        return;
+      }
       this.configHandler.reloadConfig();
     });
 
@@ -290,27 +353,19 @@ export class VsCodeExtension {
     context.subscriptions.push(watcher);
 
     vscode.workspace.onDidSaveTextDocument(async (event) => {
-      // Listen for file changes in the workspace
-      const filepath = event.uri.fsPath;
+      this.ide.updateLastFileSaveTimestamp();
+      this.core.invoke("files/changed", {
+        uris: [event.uri.toString()],
+      });
+    });
 
-      if (filepath === getConfigJsonPath()) {
-        // Trigger a toast notification to provide UI feedback that config
-        // has been updated
-        const showToast = context.globalState.get<boolean>(
-          "showConfigUpdateToast",
-          true,
-        );
-        if (showToast) {
-          vscode.window
-            .showInformationMessage("Config updated", "Don't show again")
-            .then((selection) => {
-              if (selection === "Don't show again") {
-                context.globalState.update("showConfigUpdateToast", false);
-              }
-            });
-        }
-      }
+    vscode.workspace.onDidDeleteFiles(async (event) => {
+      this.core.invoke("files/deleted", {
+        uris: event.files.map((uri) => uri.toString()),
+      });
+    });
 
+<<<<<<< HEAD
       if (filepath.endsWith(".pearairc.json") || filepath.endsWith(".prompt")) {
         this.configHandler.reloadConfig();
       } else if (
@@ -324,30 +379,60 @@ export class VsCodeExtension {
         const indexer = await this.core.codebaseIndexerPromise;
         indexer.refreshFile(filepath);
       }
+=======
+    vscode.workspace.onDidCreateFiles(async (event) => {
+      this.core.invoke("files/created", {
+        uris: event.files.map((uri) => uri.toString()),
+      });
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     });
 
     // When GitHub sign-in status changes, reload config
     vscode.authentication.onDidChangeSessions(async (e) => {
+<<<<<<< HEAD
       if (e.provider.id === "github") {
         this.configHandler.reloadConfig();
       } else if (e.provider.id === "pearai") {
         const sessionInfo = await getControlPlaneSessionInfo(true);
+=======
+      const env = await getControlPlaneEnv(this.ide.getIdeSettings());
+      if (e.provider.id === env.AUTH_TYPE) {
+        vscode.commands.executeCommand(
+          "setContext",
+          "continue.isSignedInToControlPlane",
+          true,
+        );
+
+        const sessionInfo = await getControlPlaneSessionInfo(true, false);
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         this.webviewProtocolPromise.then(async (webviewProtocol) => {
-          webviewProtocol.request("didChangeControlPlaneSessionInfo", {
+          void webviewProtocol.request("didChangeControlPlaneSessionInfo", {
             sessionInfo,
           });
 
           // To make sure continue-proxy models and anything else requiring it get updated access token
           this.configHandler.reloadConfig();
         });
-        this.core.invoke("didChangeControlPlaneSessionInfo", { sessionInfo });
+        void this.core.invoke("didChangeControlPlaneSessionInfo", {
+          sessionInfo,
+        });
+      } else {
+        vscode.commands.executeCommand(
+          "setContext",
+          "continue.isSignedInToControlPlane",
+          false,
+        );
+
+        if (e.provider.id === "github") {
+          this.configHandler.reloadConfig();
+        }
       }
     });
 
     // Refresh index when branch is changed
     this.ide.getWorkspaceDirs().then((dirs) =>
       dirs.forEach(async (dir) => {
-        const repo = await this.ide.getRepo(vscode.Uri.file(dir));
+        const repo = await this.ide.getRepo(dir);
         if (repo) {
           repo.state.onDidChange(() => {
             // args passed to this callback are always undefined, so keep track of previous branch
@@ -358,7 +443,11 @@ export class VsCodeExtension {
                   currentBranch !== this.PREVIOUS_BRANCH_FOR_WORKSPACE_DIR[dir]
                 ) {
                   // Trigger refresh of index only in this directory
+<<<<<<< HEAD
                   this.core.invoke("index/forceReIndex", { dir });
+=======
+                  this.core.invoke("index/forceReIndex", { dirs: [dir] });
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
                 }
               }
 
@@ -371,8 +460,7 @@ export class VsCodeExtension {
 
     // Register a content provider for the readonly virtual documents
     const documentContentProvider = new (class
-      implements vscode.TextDocumentContentProvider
-    {
+      implements vscode.TextDocumentContentProvider {
       // emitter and its event
       onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
       onDidChange = this.onDidChangeEmitter.event;
@@ -397,14 +485,43 @@ export class VsCodeExtension {
     });
 
     this.ide.onDidChangeActiveTextEditor((filepath) => {
+<<<<<<< HEAD
       this.core.invoke("didChangeActiveTextEditor", { filepath });
       this.sidebar.webviewProtocol.request("setActiveFilePath", filepath, [PEARAI_CHAT_VIEW_ID]);
+=======
+      void this.core.invoke("didChangeActiveTextEditor", { filepath });
+    });
+
+    const enableContinueHub = vscode.workspace
+      .getConfiguration(EXTENSION_NAME)
+      .get<boolean>("enableContinueHub");
+    vscode.workspace.onDidChangeConfiguration(async (event) => {
+      if (event.affectsConfiguration(EXTENSION_NAME)) {
+        const settings = await this.ide.getIdeSettings();
+        const webviewProtocol = await this.webviewProtocolPromise;
+        void webviewProtocol.request("didChangeIdeSettings", {
+          settings,
+        });
+
+        if (
+          enableContinueHub
+            ? settings.continueTestEnvironment !== "production"
+            : settings.continueTestEnvironment === "production"
+        ) {
+          await vscode.commands.executeCommand("workbench.action.reloadWindow");
+        }
+      }
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     });
 
     this.updateNewWindowActiveFilePath();
   }
 
+<<<<<<< HEAD
   static continueVirtualDocumentScheme = "pearai";
+=======
+  static continueVirtualDocumentScheme = EXTENSION_NAME;
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
   // eslint-disable-next-line @typescript-eslint/naming-convention
   private PREVIOUS_BRANCH_FOR_WORKSPACE_DIR: { [dir: string]: string } = {};

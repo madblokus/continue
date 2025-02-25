@@ -3,7 +3,12 @@
   "name": "pearai",
   "publisher": "pearai",
   "icon": "media/icon.png",
+<<<<<<< HEAD
   "version": "1.8.1",
+=======
+  "author": "Continue Dev, Inc",
+  "version": "0.9.268",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   "repository": {
     "type": "git",
     "url": "https://github.com/trypear/pearai-submodule"
@@ -54,7 +59,6 @@
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
-  "browser": "./out/extension.js",
   "contributes": {
     "languages": [
       {
@@ -63,6 +67,23 @@
           ".pearairc.json"
         ],
         "id": "jsonc"
+      },
+      {
+        "id": "promptLanguage",
+        "extensions": [
+          ".prompt"
+        ],
+        "aliases": [
+          "Prompt Language"
+        ],
+        "configuration": "./prompt-file-language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "promptLanguage",
+        "scopeName": "source.prompt",
+        "path": "./media/prompt.tmLanguage.json"
       }
     ],
     "configuration": {
@@ -76,14 +97,32 @@
         "pearai.enableContinueForTeams": {
           "type": "boolean",
           "default": false,
+<<<<<<< HEAD
           "markdownDescription": "_(Requires window reload)_ Enable PearAI for teams beta features. To sign in, click the person icon in the bottom right of the sidebar."
+=======
+          "markdownDescription": "Enable Continue for teams beta features. To sign in, click the gear icon to go to the settings page, and click Sign In."
+        },
+        "continue.enableContinueHub": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable Continue Hub (internal)"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         },
         "pearai.showInlineTip": {
           "type": "boolean",
           "default": true,
           "description": "Show inline suggestion to use the PearAI keyboard shortcuts (e.g. \"Cmd/Ctrl L to select code, Cmd/Ctrl I to edit\")."
         },
+<<<<<<< HEAD
         "pearai.enableQuickActions": {
+=======
+        "continue.disableQuickFix": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable the quick fix feature."
+        },
+        "continue.enableQuickActions": {
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
           "type": "boolean",
           "default": false,
           "markdownDescription": "Enable the experimental Quick Actions feature. Read our walkthrough to learn about configuration and how to share feedback: [pearai.dev › Walkthrough: Quick Actions (experimental)](https://trypear.ai/features/quick-actions)"
@@ -103,12 +142,16 @@
           "default": false,
           "markdownDescription": "Pause PearAI's codebase index on start."
         },
+<<<<<<< HEAD
         "pearai.enableDebugLogs": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "Enable PearAI Debug Logs in the Output panel."
         },
         "pearai.remoteConfigServerUrl": {
+=======
+        "continue.remoteConfigServerUrl": {
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
           "type": "string",
           "default": null,
           "markdownDescription": "If your team is set up to use shared configuration, enter the server URL here and your user token below to enable automatic syncing."
@@ -127,8 +170,19 @@
     },
     "commands": [
       {
+<<<<<<< HEAD
         "command": "pearai.acceptDiff",
         "category": "PearAI",
+=======
+        "command": "continue.applyCodeFromChat",
+        "category": "Continue",
+        "title": "Apply code from chat",
+        "group": "Continue"
+      },
+      {
+        "command": "continue.acceptDiff",
+        "category": "Continue",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         "title": "Accept Diff",
         "group": "PearAI"
       },
@@ -152,12 +206,18 @@
         "group": "PearAI"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.quickEdit",
         "category": "PearAI",
+=======
+        "command": "continue.focusEdit",
+        "category": "Continue",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         "title": "Generate Code",
         "group": "PearAI"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.toggleCreator",
         "category": "PearAI",
         "title": "Toggle PearAI Creator",
@@ -217,6 +277,12 @@
         "category": "PearAI",
         "title": "Add Highlighted Code to Context",
         "group": "PearAI"
+=======
+        "command": "continue.focusContinueInput",
+        "category": "Continue",
+        "title": "Add Highlighted Code to Context and Clear Chat",
+        "group": "Continue"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       },
       {
         "command": "pearai.focusContinueInputWithoutClear",
@@ -225,6 +291,7 @@
         "group": "PearAI"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.debugTerminal",
         "category": "PearAI",
         "title": "PearAI: Debug Terminal",
@@ -242,6 +309,32 @@
         "category": "PearAI",
         "title": "Open config.json",
         "group": "PearAI"
+=======
+        "command": "continue.debugTerminal",
+        "category": "Continue",
+        "title": "Debug Terminal",
+        "group": "Continue"
+      },
+      {
+        "command": "continue.exitEditMode",
+        "category": "Continue",
+        "title": "Exit Edit Mode",
+        "group": "Continue"
+      },
+      {
+        "command": "continue.toggleFullScreen",
+        "category": "Continue",
+        "title": "Open in new window",
+        "icon": "$(link-external)",
+        "group": "Continue"
+      },
+      {
+        "command": "continue.openConfigPage",
+        "category": "Continue",
+        "title": "Open Settings",
+        "icon": "$(gear)",
+        "group": "Continue"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       },
       {
         "command": "pearai.openPearAiWelcome",
@@ -256,10 +349,17 @@
         "group": "PearAI"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.selectFilesAsContext",
         "category": "PearAI",
         "title": "PearAI: Select Files as Context",
         "group": "PearAI"
+=======
+        "command": "continue.selectFilesAsContext",
+        "category": "Continue",
+        "title": "Select Files as Context",
+        "group": "Continue"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       },
       {
         "command": "pearai.newSession",
@@ -283,6 +383,7 @@
         "group": "PearAI"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.viewHistorySearch",
         "category": "PearAI",
         "title": "View Search History",
@@ -292,6 +393,29 @@
       {
         "command": "pearai.writeCommentsForCode",
         "category": "PearAI",
+=======
+        "command": "continue.viewLogs",
+        "category": "Continue",
+        "title": "View History",
+        "group": "Continue"
+      },
+      {
+        "command": "continue.navigateTo",
+        "category": "Continue",
+        "title": "Navigate to a path",
+        "group": "Continue"
+      },
+      {
+        "command": "continue.openMorePage",
+        "category": "Continue",
+        "title": "More",
+        "icon": "$(ellipsis)",
+        "group": "Continue"
+      },
+      {
+        "command": "continue.writeCommentsForCode",
+        "category": "Continue",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         "title": "Write Comments for this Code",
         "group": "PearAI"
       },
@@ -326,8 +450,19 @@
         "group": "PearAI"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.docsIndex",
         "category": "PearAI",
+=======
+        "command": "continue.rebuildCodebaseIndex",
+        "category": "Continue",
+        "title": "Rebuild codebase index",
+        "group": "Continue"
+      },
+      {
+        "command": "continue.docsIndex",
+        "category": "Continue",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         "title": "Docs Index",
         "group": "PearAI"
       },
@@ -335,6 +470,7 @@
         "command": "pearai.docsReIndex",
         "category": "PearAI",
         "title": "Docs Force Re-Index",
+<<<<<<< HEAD
         "group": "PearAI"
       },
       {
@@ -390,6 +526,15 @@
         "category": "PearAI",
         "title": "Show Chat Tutorial",
         "group": "PearAI"
+=======
+        "group": "Continue"
+      },
+      {
+        "command": "continue.focusContinueSessionId",
+        "category": "Continue",
+        "title": "Focus Continue Chat",
+        "group": "Continue"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       }
     ],
     "keybindings": [
@@ -429,19 +574,25 @@
         "key": "ctrl+shift+l"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.toggleAuxiliaryBar",
         "mac": "alt+cmd+l",
         "key": "alt+ctrl+l"
       },
       {
         "command": "pearai.acceptDiff",
+=======
+        "command": "continue.acceptDiff",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         "mac": "shift+cmd+enter",
-        "key": "shift+ctrl+enter"
+        "key": "shift+ctrl+enter",
+        "when": "continue.diffVisible"
       },
       {
         "command": "pearai.rejectDiff",
         "mac": "shift+cmd+backspace",
-        "key": "shift+ctrl+backspace"
+        "key": "shift+ctrl+backspace",
+        "when": "continue.diffVisible"
       },
       {
         "command": "pearai.rejectDiff",
@@ -472,12 +623,32 @@
         "key": "alt+ctrl+n"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.quickEdit",
+=======
+        "command": "continue.focusEdit",
+        "title": "Edit code with natural language",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         "mac": "cmd+i",
         "key": "ctrl+i"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.debugTerminal",
+=======
+        "command": "continue.focusEditWithoutClear",
+        "mac": "cmd+shift+i",
+        "key": "ctrl+shift+i"
+      },
+      {
+        "command": "continue.exitEditMode",
+        "mac": "escape",
+        "key": "escape",
+        "when": "continue.inEditMode && editorFocus"
+      },
+      {
+        "command": "continue.debugTerminal",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         "mac": "cmd+shift+r",
         "key": "ctrl+shift+r"
       },
@@ -494,6 +665,7 @@
         "when": "!terminalFocus"
       },
       {
+<<<<<<< HEAD
         "command": "pearai.loadRecentChat",
         "mac": "cmd+0",
         "key": "ctrl+0"
@@ -507,6 +679,11 @@
         "command": "pearai.viewHistory",
         "mac": "cmd+h",
         "key": "ctrl+h"
+=======
+        "command": "continue.applyCodeFromChat",
+        "mac": "alt+a",
+        "key": "alt+a"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       }
     ],
     "submenus": [
@@ -518,10 +695,14 @@
     "menus": {
       "commandPalette": [
         {
+<<<<<<< HEAD
           "command": "pearai.quickEdit"
         },
         {
           "command": "pearai.toggleCreator"
+=======
+          "command": "continue.focusContinueInput"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         },
         {
           "command": "pearai.toggleSearch"
@@ -606,6 +787,7 @@
           "when": "view == pearai.chatView"
         },
         {
+<<<<<<< HEAD
           "command": "pearai.newSessionSearch",
           "group": "navigation@1",
           "when": "view == pearai.searchView"
@@ -624,13 +806,44 @@
           "command": "pearai.viewHistorySearch",
           "group": "navigation@1",
           "when": "view == pearai.searchView"
+=======
+          "command": "continue.viewHistory",
+          "group": "navigation@2",
+          "when": "view == continue.continueGUIView"
+        },
+        {
+          "command": "continue.toggleFullScreen",
+          "group": "navigation@3",
+          "when": "view == continue.continueGUIView"
+        },
+        {
+          "command": "continue.openConfigPage",
+          "group": "navigation@4",
+          "when": "view == continue.continueGUIView"
+        },
+        {
+          "command": "continue.openMorePage",
+          "group": "navigation@6",
+          "when": "view == continue.continueGUIView"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         }
       ],
       "editor/title": [
         {
+<<<<<<< HEAD
           "command": "pearai.toggleFullScreen",
           "group": "navigation@1",
           "when": "activeWebviewPanelId == pearai.chatView || activeWebviewPanelId == pearai.searchView"
+=======
+          "command": "continue.newSession",
+          "group": "navigation@1",
+          "when": "activeWebviewPanelId == continue.continueGUIView"
+        },
+        {
+          "command": "continue.viewHistory",
+          "group": "navigation@2",
+          "when": "activeWebviewPanelId == continue.continueGUIView"
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         }
       ],
       "terminal/context": [
@@ -663,6 +876,7 @@
       "pearaiChat": [
         {
           "type": "webview",
+<<<<<<< HEAD
           "id": "pearai.chatView",
           "name": "PearAI Chat",
           "visibility": "visible"
@@ -681,13 +895,18 @@
           "type": "webview",
           "id": "pearai.mem0View",
           "name": "PearAI Memory",
+=======
+          "id": "continue.continueGUIView",
+          "name": "Continue",
+          "icon": "media/sidebar-icon.png",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
           "visibility": "visible"
         }
       ]
     },
     "jsonValidation": [
       {
-        "fileMatch": "config.json",
+        "fileMatch": "**/.continue*/config.json",
         "url": "./config_schema.json"
       },
       {
@@ -701,10 +920,14 @@
     "vscode:prepublish": "npm run esbuild-base -- --minify",
     "esbuild": "npm run esbuild-base -- --sourcemap",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "esbuild-notify": "npm run esbuild-base -- --sourcemap --notify",
+    "esbuild:visualize": "esbuild-visualizer --metadata ./build/meta.json --filename ./build/stats.html --open",
     "tsc": "tsc -p ./",
+    "tsc:check": "tsc -p ./ --noEmit",
     "tsc-watch": "tsc -watch -p ./",
     "rebuild": "electron-rebuild -v 19.1.8 node-pty",
     "lint": "eslint src --ext ts",
+    "lint:fix": "eslint . --ext ts --fix",
     "build-test": "npm run esbuild && node esbuild.test.mjs",
     "test": "npm run build-test && node ./out/runTestOnVSCodeHost.js",
     "quick-test": "npm run build-test && node ./out/runTestOnVSCodeHost.js",
@@ -714,12 +937,29 @@
     "package:pre-release": "node scripts/package.js --pre-release",
     "build:rust": "cargo-cp-artifact -ac sync sync.node -- cargo build --manifest-path ../../sync/Cargo.toml --message-format=json-render-diagnostics",
     "build-debug:rust": "npm run build:rust --",
-    "build-release:rust": "npm run build:rust -- --release"
+    "build-release:rust": "npm run build:rust -- --release",
+    "e2e:compile": "tsc -p ./tsconfig.e2e.json",
+    "e2e:build": "npm --prefix ../../gui run build && npm run package",
+    "e2e:create-storage": "mkdir -p ./e2e/storage",
+    "e2e:get-chromedriver": "extest get-chromedriver --storage ./e2e/storage",
+    "e2e:get-vscode": "CODE_VERSION=\"1.95.0\" extest get-vscode --storage ./e2e/storage",
+    "e2e:sign-vscode": "codesign --entitlements entitlements.plist --deep --force -s - './e2e/storage/Visual Studio Code.app'",
+    "e2e:copy-vsix": "chmod +x ./e2e/get-latest-vsix.sh && bash ./e2e/get-latest-vsix.sh",
+    "e2e:install-vsix": "extest install-vsix -f ./e2e/vsix/continue.vsix --extensions_dir ./e2e/.test-extensions --storage ./e2e/storage",
+    "e2e:install-extensions": "extest install-from-marketplace ms-vscode-remote.remote-ssh --extensions_dir ./e2e/.test-extensions --storage ./e2e/storage && extest install-from-marketplace ms-vscode-remote.remote-containers --extensions_dir ./e2e/.test-extensions --storage ./e2e/storage && extest install-from-marketplace ms-vscode-remote.remote-wsl --extensions_dir ./e2e/.test-extensions --storage ./e2e/storage",
+    "e2e:test": "extest run-tests ${TEST_FILE:-'./e2e/_output/tests/*.test.js'} --code_settings settings.json --extensions_dir ./e2e/.test-extensions --storage ./e2e/storage",
+    "e2e:clean": "rm -rf ./e2e/_output",
+    "e2e:all": "npm run e2e:build && npm run e2e:compile && npm run e2e:create-storage && npm run e2e:get-chromedriver && npm run e2e:get-vscode && npm run e2e:sign-vscode && npm run e2e:copy-vsix && npm run e2e:install-vsix && npm run e2e:install-extensions && CONTINUE_GLOBAL_DIR=e2e/test-continue npm run e2e:test && npm run e2e:clean",
+    "e2e:quick": "npm run e2e:compile && CONTINUE_GLOBAL_DIR=e2e/test-continue npm run e2e:test && npm run e2e:clean",
+    "e2e:ci:download": "npm run e2e:create-storage && npm run e2e:get-chromedriver && npm run e2e:get-vscode",
+    "e2e:ci:run": "npm run e2e:compile && npm run e2e:copy-vsix && npm run e2e:install-vsix && npm run e2e:install-extensions && CONTINUE_GLOBAL_DIR=e2e/test-continue npm run e2e:test",
+    "e2e:ci:run-yaml": "npm run e2e:compile && npm run e2e:copy-vsix && npm run e2e:install-vsix && npm run e2e:install-extensions && CONTINUE_GLOBAL_DIR=e2e/test-continue-yaml npm run e2e:test"
   },
   "devDependencies": {
     "@biomejs/biome": "1.6.4",
     "@nestjs/common": "^8.4.7",
     "@openapitools/openapi-generator-cli": "^2.5.2",
+    "@types/chai": "^5.0.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/follow-redirects": "^1.14.4",
@@ -731,10 +971,11 @@
     "@types/vscode": "1.70",
     "@types/ws": "^8.5.4",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
-    "@typescript-eslint/parser": "^5.45.0",
     "@vscode/vsce": "^2.22.0",
     "cargo-cp-artifact": "^0.1",
+    "chai": "^4.5.0",
     "esbuild": "0.17.19",
+    "esbuild-visualizer": "^0.6.0",
     "eslint": "^8.28.0",
     "glob": "^8.0.3",
     "json-schema-to-typescript": "^12.0.0",
@@ -743,9 +984,11 @@
     "rimraf": "^5.0.5",
     "typescript": "^5.3.3",
     "vite": "^4.3.9",
-    "vsce": "^2.15.0"
+    "vsce": "^2.15.0",
+    "vscode-extension-tester": "^8.10.0"
   },
   "dependencies": {
+    "@continuedev/fetch": "^1.0.3",
     "@electron/rebuild": "^3.2.10",
     "@reduxjs/toolkit": "^1.9.3",
     "@types/node-fetch": "^2.6.11",
@@ -755,9 +998,10 @@
     "axios": "^1.2.5",
     "core": "file:../../core",
     "cors": "^2.8.5",
-    "dbinfoz": "^0.1.4",
+    "dbinfoz": "^0.14.0",
+    "diff": "^7.0.0",
     "downshift": "^7.6.0",
-    "esbuild": "^0.17.19",
+    "esbuild": "0.17.19",
     "express": "^4.18.2",
     "fkill": "^8.1.0",
     "follow-redirects": "^1.15.4",
@@ -770,6 +1014,7 @@
     "https-proxy-agent": "^7.0.2",
     "ignore": "^5.3.0",
     "jsdom": "^24.0.0",
+    "lru-cache": "^11.0.2",
     "minisearch": "^7.0.0",
     "monaco-editor": "^0.45.0",
     "monaco-vscode-textmate-theme-converter": "^0.1.7",
@@ -783,7 +1028,8 @@
     "request": "^2.88.2",
     "socket.io-client": "^4.7.2",
     "strip-ansi": "^7.1.0",
-    "systeminformation": "^5.22.10",
+    "svg-builder": "^2.0.0",
+    "systeminformation": "^5.23.7",
     "tailwindcss": "^3.3.2",
     "undici": "^6.2.0",
     "uuid": "^9.0.1",

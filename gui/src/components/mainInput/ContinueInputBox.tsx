@@ -1,7 +1,8 @@
-import { JSONContent } from "@tiptap/react";
+import { Editor, JSONContent } from "@tiptap/react";
 import { ContextItemWithId, InputModifiers } from "core";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import styled, { keyframes } from "styled-components";
+<<<<<<< HEAD
 import { defaultBorderRadius, lightGray, vscBackground } from "..";
 import { useWebviewListener } from "../../hooks/useWebviewListener";
 import { selectSlashCommands } from "../../redux/selectors";
@@ -14,6 +15,42 @@ import { getContextProviders } from "../../integrations/util/integrationSpecific
 import { getFontSize } from "../../util";
 import { cn } from "@/lib/utils";
 import { Tail } from "@/components/ui/tail";
+=======
+import { defaultBorderRadius, vscBackground } from "..";
+import { selectSlashCommandComboBoxInputs } from "../../redux/selectors";
+import ContextItemsPeek from "./ContextItemsPeek";
+import TipTapEditor from "./TipTapEditor";
+import { useAppSelector } from "../../redux/hooks";
+import { ToolbarOptions } from "./InputToolbar";
+import { useMemo } from "react";
+
+interface ContinueInputBoxProps {
+  isEditMode?: boolean;
+  isLastUserInput: boolean;
+  isMainInput?: boolean;
+  onEnter: (
+    editorState: JSONContent,
+    modifiers: InputModifiers,
+    editor: Editor,
+  ) => void;
+  editorState?: JSONContent;
+  contextItems?: ContextItemWithId[];
+  hidden?: boolean;
+  inputId: string; // used to keep track of things per input in redux
+}
+
+const EDIT_DISALLOWED_CONTEXT_PROVIDERS = [
+  "codebase",
+  "tree",
+  "open",
+  "web",
+  "diff",
+  "folder",
+  "search",
+  "debugger",
+  "repo-map",
+];
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
 const gradient = keyframes`
   0% {
@@ -27,8 +64,6 @@ const gradient = keyframes`
 const GradientBorder = styled.div<{
   borderRadius?: string;
   borderColor?: string;
-  isFirst: boolean;
-  isLast: boolean;
   loading: 0 | 1;
 }>`
   border-radius: ${(props) => props.borderRadius || "0"};
@@ -52,6 +87,7 @@ const GradientBorder = styled.div<{
   display: flex;
   flex-direction: row;
   align-items: center;
+<<<<<<< HEAD
   position: relative;
 `;
 
@@ -158,6 +194,49 @@ const ContinueInputBox = memo(function ContinueInputBox({
     },
     [isMainInput],
   );
+=======
+`;
+
+function ContinueInputBox(props: ContinueInputBoxProps) {
+  const isStreaming = useAppSelector((state) => state.session.isStreaming);
+  const availableSlashCommands = useAppSelector(
+    selectSlashCommandComboBoxInputs,
+  );
+  const availableContextProviders = useAppSelector(
+    (state) => state.config.config.contextProviders,
+  );
+  const editModeState = useAppSelector((state) => state.editModeState);
+
+  const filteredSlashCommands = props.isEditMode ? [] : availableSlashCommands;
+  const filteredContextProviders = useMemo(() => {
+    if (!props.isEditMode) {
+      return availableContextProviders ?? [];
+    }
+
+    return (
+      availableContextProviders?.filter(
+        (provider) =>
+          !EDIT_DISALLOWED_CONTEXT_PROVIDERS.includes(provider.title),
+      ) ?? []
+    );
+  }, [availableContextProviders]);
+
+  const historyKey = props.isEditMode ? "edit" : "chat";
+  const placeholder = props.isEditMode
+    ? "Describe how to modify the code - use '#' to add files"
+    : undefined;
+
+  const toolbarOptions: ToolbarOptions = props.isEditMode
+    ? {
+        hideAddContext: false,
+        hideImageUpload: false,
+        hideUseCodebase: true,
+        hideSelectModel: false,
+        hideTools: true,
+        enterText: editModeState.editStatus === "accepting" ? "Retry" : "Edit",
+      }
+    : {};
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
   // check if lastActiveIntegration === source, if so, activate gradient border and tiptap editor
   // actually can get history here and check if last message of passed in source was a lastUserInput
@@ -175,6 +254,7 @@ const ContinueInputBox = memo(function ContinueInputBox({
   }, []);
 
   return (
+<<<<<<< HEAD
     <div>
       <GradientBorder
         loading={active && isLastUserInput ? 1 : 0}
@@ -209,6 +289,34 @@ const ContinueInputBox = memo(function ContinueInputBox({
         </LoadingContainer>
       )}
       <ContextItemsPeek contextItems={contextItems}></ContextItemsPeek>
+=======
+    <div className={`${props.hidden ? "hidden" : ""}`}>
+      <div className={`relative flex flex-col px-2`}>
+        <GradientBorder
+          loading={isStreaming && props.isLastUserInput ? 1 : 0}
+          borderColor={
+            isStreaming && props.isLastUserInput ? undefined : vscBackground
+          }
+          borderRadius={defaultBorderRadius}
+        >
+          <TipTapEditor
+            editorState={props.editorState}
+            onEnter={props.onEnter}
+            placeholder={placeholder}
+            isMainInput={props.isMainInput ?? false}
+            availableContextProviders={filteredContextProviders}
+            availableSlashCommands={filteredSlashCommands}
+            historyKey={historyKey}
+            toolbarOptions={toolbarOptions}
+            inputId={props.inputId}
+          />
+        </GradientBorder>
+      </div>
+      <ContextItemsPeek
+        contextItems={props.contextItems}
+        isCurrentContextPeek={props.isLastUserInput}
+      />
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     </div>
   );
 });

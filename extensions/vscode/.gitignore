@@ -10,9 +10,24 @@ exe
 bin
 assets
 
+<<<<<<< HEAD
 gui/*
 !gui/logos
 !gui/onigasm.wasm
+=======
+gui/**
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
 .devcontainer
 .github
+
+continue_rc_schema.json
+
+e2e/_output
+e2e/.test-extensions
+e2e/storage
+e2e/vsix
+e2e/test-continue/*
+!e2e/test-continue/config.json
+e2e/test-continue-yaml/*
+!e2e/test-continue-yaml/config.yaml

@@ -13,6 +13,7 @@ const command = isPreRelease
   ? "npx vsce package --out ./build --pre-release --no-dependencies"
   : "npx vsce package --out ./build --no-dependencies";
 
+<<<<<<< HEAD
 exec(command, (error, stdout, stderr) => {
   if (error) {
     console.error(`Error: ${stderr}`);
@@ -30,3 +31,21 @@ exec(command, (error, stdout, stderr) => {
 
   console.log(`VSIX package created: ${vsixPath}`);
 });
+=======
+let command = isPreRelease
+  ? "npx vsce package --out ./build --pre-release --no-dependencies" // --yarn"
+  : "npx vsce package --out ./build --no-dependencies"; // --yarn";
+
+if (target) {
+  command += ` --target ${target}`;
+}
+
+exec(command, (error) => {
+  if (error) {
+    throw error;
+  }
+  console.log(
+    "vsce package completed - extension created at extensions/vscode/build/continue-{version}.vsix",
+  );
+});
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d

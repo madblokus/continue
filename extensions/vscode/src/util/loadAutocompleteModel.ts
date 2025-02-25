@@ -1,23 +1,15 @@
-import type { ILLM } from "core";
 import { ConfigHandler } from "core/config/ConfigHandler";
 import Ollama from "core/llm/llms/Ollama";
 import { GlobalContext } from "core/util/GlobalContext";
-import * as vscode from "vscode";
+
+import type { ILLM } from "core";
 
 export class TabAutocompleteModel {
   private _llm: ILLM | undefined;
-  private defaultTag = "starcoder2:3b";
-  private defaultTagName = "Starcoder2 3b";
+  private defaultTag = "qwen2.5-coder:1.5b";
   private globalContext: GlobalContext = new GlobalContext();
 
-  private shownOllamaWarning = false;
-  private shownDeepseekWarning = false;
-
-  private configHandler: ConfigHandler;
-
-  constructor(configHandler: ConfigHandler) {
-    this.configHandler = configHandler;
-  }
+  constructor(private configHandler: ConfigHandler) {}
 
   clearLlm() {
     this._llm = undefined;
@@ -31,6 +23,7 @@ export class TabAutocompleteModel {
     try {
       const models = await llm.listModels();
       if (!models.includes(this.defaultTag)) {
+<<<<<<< HEAD
         if (!this.shownDeepseekWarning) {
           vscode.window
             .showWarningMessage(
@@ -51,6 +44,8 @@ export class TabAutocompleteModel {
             });
           this.shownDeepseekWarning = true;
         }
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         return undefined;
       }
     } catch (e) {
@@ -62,7 +57,11 @@ export class TabAutocompleteModel {
 
   async get() {
     if (!this._llm) {
-      const config = await this.configHandler.loadConfig();
+      const { config } = await this.configHandler.loadConfig();
+      if (!config) {
+        return undefined;
+      }
+
       if (config.tabAutocompleteModels?.length) {
         const selected = this.globalContext.get("selectedTabAutocompleteModel");
         if (selected) {

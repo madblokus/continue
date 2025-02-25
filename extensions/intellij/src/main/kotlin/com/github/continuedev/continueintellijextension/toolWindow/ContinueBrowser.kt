@@ -1,28 +1,23 @@
 package com.github.continuedev.continueintellijextension.toolWindow
 
-import com.github.continuedev.continueintellijextension.activities.showTutorial
-import com.github.continuedev.continueintellijextension.activities.ContinuePluginStartupActivity
-import com.github.continuedev.continueintellijextension.constants.getConfigJsonPath
-import com.github.continuedev.continueintellijextension.constants.getContinueGlobalPath
-import com.github.continuedev.continueintellijextension.`continue`.*
+import com.github.continuedev.continueintellijextension.activities.ContinuePluginDisposable
+import com.github.continuedev.continueintellijextension.constants.MessageTypes
+import com.github.continuedev.continueintellijextension.constants.MessageTypes.Companion.PASS_THROUGH_TO_CORE
 import com.github.continuedev.continueintellijextension.factories.CustomSchemeHandlerFactory
+import com.github.continuedev.continueintellijextension.services.ContinueExtensionSettings
 import com.github.continuedev.continueintellijextension.services.ContinuePluginService
+import com.github.continuedev.continueintellijextension.utils.uuid
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.util.io.StreamUtil
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.jcef.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.cef.CefApp
 import org.cef.browser.CefBrowser
 import org.cef.handler.CefLoadHandlerAdapter
+<<<<<<< HEAD
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
@@ -74,36 +69,38 @@ class ContinueBrowser(val project: Project, url: String, useOsr: Boolean = false
         "profiles/switch",
         "didChangeSelectedProfile",
     )
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
+class ContinueBrowser(val project: Project, url: String) {
     private fun registerAppSchemeHandler() {
         CefApp.getInstance().registerSchemeHandlerFactory(
+<<<<<<< HEAD
                 "http",
                 "pearai",
                 CustomSchemeHandlerFactory()
+=======
+            "http",
+            "continue",
+            CustomSchemeHandlerFactory()
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         )
     }
 
     val browser: JBCefBrowser
-    init {
-        val osName = System.getProperty("os.name").toLowerCase()
-        val os = when {
-            osName.contains("mac") || osName.contains("darwin") -> "darwin"
-            osName.contains("win") -> "win32"
-            osName.contains("nix") || osName.contains("nux") || osName.contains("aix") -> "linux"
-            else -> "linux"
-        }
 
-        this.browser = JBCefBrowser.createBuilder().setOffScreenRendering(os == "linux" || useOsr).build()
-        browser.jbCefClient.setProperty(
-                JBCefClient.Properties.JS_QUERY_POOL_SIZE,
-                JS_QUERY_POOL_SIZE
-        )
+    init {
+        val isOSREnabled = ServiceManager.getService(ContinueExtensionSettings::class.java).continueState.enableOSR
+
+        this.browser = JBCefBrowser.createBuilder().setOffScreenRendering(isOSREnabled).build()
+
         registerAppSchemeHandler()
         browser.loadURL(url);
-        Disposer.register(project, browser)
+        Disposer.register(ContinuePluginDisposable.getInstance(project), browser)
 
         // Listen for events sent from browser
         val myJSQueryOpenInBrowser = JBCefJSQuery.create((browser as JBCefBrowserBase?)!!)
+
         myJSQueryOpenInBrowser.addHandler { msg: String? ->
             val parser = JsonParser()
             val json: JsonObject = parser.parse(msg).asJsonObject
@@ -112,19 +109,11 @@ class ContinueBrowser(val project: Project, url: String, useOsr: Boolean = false
             val messageId = json.get("messageId")?.asString
 
             val continuePluginService = ServiceManager.getService(
-                    project,
-                    ContinuePluginService::class.java
+                project,
+                ContinuePluginService::class.java
             )
 
-            val ide = continuePluginService.ideProtocolClient;
-
             val respond = fun(data: Any?) {
-                val jsonData = mutableMapOf(
-                        "messageId" to messageId,
-                        "data" to data,
-                        "messageType" to messageType
-                )
-                val jsonString = Gson().toJson(jsonData)
                 sendToWebview(messageType, data, messageId ?: uuid())
             }
 
@@ -133,80 +122,19 @@ class ContinueBrowser(val project: Project, url: String, useOsr: Boolean = false
                 return@addHandler null
             }
 
-            when (messageType) {
-                "jetbrains/editorInsetHeight" -> {
-                    val height = data.asJsonObject.get("height").asInt
-                    heightChangeListeners.forEach { it(height) }
-                }
-                "onLoad" -> {
-                    GlobalScope.launch {
-                        // Set the colors to match Intellij theme
-                        val colors = GetTheme().getTheme();
-                        sendToWebview("setColors", colors)
-
-                        val jsonData = mutableMapOf(
-                                "windowId" to continuePluginService.windowId,
-                                "workspacePaths" to continuePluginService.workspacePaths,
-                                "vscMachineId" to getMachineUniqueID(),
-                                "vscMediaUrl" to "http://continue",
-                        )
-                        respond(jsonData)
-                    }
-
-                }
-                "showLines" -> {
-                    val data = data.asJsonObject
-                    ide?.setFileOpen(data.get("filepath").asString)
-                    ide?.highlightCode(RangeInFile(
-                            data.get("filepath").asString,
-                            Range(Position(
-                                    data.get("start").asInt,
-                                    0
-                            ), Position(
-                                    data.get("end").asInt,
-                                    0
-                            )),
-
-                            ),"#00ff0022")
-                }
-                "showTutorial" -> {
-                    showTutorial(project)
-                }
-                "showVirtualFile" -> {
-                    val data = data.asJsonObject
-                    ide?.showVirtualFile(data.get("name").asString, data.get("content").asString)
-                }
-                "showFile" -> {
-                    val data = data.asJsonObject
-                    ide?.setFileOpen(data.get("filepath").asString)
-                }
-                "reloadWindow" -> {}
-                "openConfigJson" -> {
-                    ide?.setFileOpen(getConfigJsonPath())
-                }
-                "readRangeInFile" -> {
-                    val data = data.asJsonObject
-                    ide?.readRangeInFile(RangeInFile(
-                            data.get("filepath").asString,
-                            Range(Position(
-                                    data.get("start").asInt,
-                                    0
-                            ), Position(
-                                    data.get("end").asInt + 1,
-                                    0
-                            )),
-                    ))
-                }
-                "focusEditor" -> {}
-
-                // IDE //
-                else -> {
-                    if (msg != null) {
-                        ide?.handleMessage(msg, respond)
-                    }
-                }
+            // If not pass through, then put it in the status/content/done format for webview
+            // Core already sends this format
+            val respondToWebview = fun(data: Any?) {
+                sendToWebview(messageType, mapOf(
+                    "status" to "success",
+                    "content" to data,
+                    "done" to true
+                ), messageId ?: uuid())
             }
 
+            if (msg != null) {
+                continuePluginService.ideProtocolClient?.handleMessage(msg, respondToWebview)
+            }
 
             null
         }
@@ -214,10 +142,10 @@ class ContinueBrowser(val project: Project, url: String, useOsr: Boolean = false
         // Listen for the page load event
         browser.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
             override fun onLoadingStateChange(
-                    browser: CefBrowser?,
-                    isLoading: Boolean,
-                    canGoBack: Boolean,
-                    canGoForward: Boolean
+                browser: CefBrowser?,
+                isLoading: Boolean,
+                canGoBack: Boolean,
+                canGoForward: Boolean
             ) {
                 if (!isLoading) {
                     // The page has finished loading
@@ -227,6 +155,7 @@ class ContinueBrowser(val project: Project, url: String, useOsr: Boolean = false
         }, browser.cefBrowser)
 
     }
+
     fun executeJavaScript(browser: CefBrowser?, myJSQueryOpenInBrowser: JBCefJSQuery) {
         // Execute JavaScript - you might want to handle potential exceptions here
         val script = """window.postIntellijMessage = function(messageType, data, messageId) {
@@ -238,21 +167,23 @@ class ContinueBrowser(val project: Project, url: String, useOsr: Boolean = false
     }
 
     fun sendToWebview(
-            messageType: String,
-            data: Any?,
-            messageId: String = uuid()
+        messageType: String,
+        data: Any?,
+        messageId: String = uuid()
     ) {
         val jsonData = Gson().toJson(
-                mapOf(
-                        "messageId" to messageId,
-                        "messageType" to messageType,
-                        "data" to data
-                )
+            mapOf(
+                "messageId" to messageId,
+                "messageType" to messageType,
+                "data" to data
+            )
         )
         val jsCode = buildJavaScript(jsonData)
 
         try {
-            this.browser.executeJavaScriptAsync(jsCode)
+            this.browser.executeJavaScriptAsync(jsCode).onError {
+                println("Failed to execute jsCode error: ${it.message}")
+            }
         } catch (error: IllegalStateException) {
             println("Webview not initialized yet $error")
         }
@@ -261,4 +192,5 @@ class ContinueBrowser(val project: Project, url: String, useOsr: Boolean = false
     private fun buildJavaScript(jsonData: String): String {
         return """window.postMessage($jsonData, "*");"""
     }
+
 }

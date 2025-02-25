@@ -1,15 +1,56 @@
-import * as JSONC from "comment-json";
-import dotenv from "dotenv";
 import * as fs from "fs";
 import * as os from "os";
+<<<<<<< HEAD
 import path from "path";
 import { defaultConfig, defaultConfigJetBrains } from "../config/default.js";
 import Types from "../config/types.js";
 import { IdeType, SerializedContinueConfig } from "../index.js";
+=======
+import * as path from "path";
+
+import * as JSONC from "comment-json";
+import dotenv from "dotenv";
+
+import { IdeType, SerializedContinueConfig } from "../";
+import { defaultConfig, defaultConfigJetBrains } from "../config/default";
+import Types from "../config/types";
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
 dotenv.config();
+
 const CONTINUE_GLOBAL_DIR =
   process.env.CONTINUE_GLOBAL_DIR ?? path.join(os.homedir(), ".pearai");
+
+// export const DEFAULT_CONFIG_TS_CONTENTS = `import { Config } from "./types"\n\nexport function modifyConfig(config: Config): Config {
+//   return config;
+// }`;
+
+export const DEFAULT_CONFIG_TS_CONTENTS = `export function modifyConfig(config: Config): Config {
+  return config;
+}`;
+
+export function getChromiumPath(): string {
+  return path.join(getContinueUtilsPath(), ".chromium-browser-snapshots");
+}
+
+export function getContinueUtilsPath(): string {
+  const utilsPath = path.join(getContinueGlobalPath(), ".utils");
+  if (!fs.existsSync(utilsPath)) {
+    fs.mkdirSync(utilsPath);
+  }
+  return utilsPath;
+}
+
+export function getGlobalContinueIgnorePath(): string {
+  const continueIgnorePath = path.join(
+    getContinueGlobalPath(),
+    ".continueignore",
+  );
+  if (!fs.existsSync(continueIgnorePath)) {
+    fs.writeFileSync(continueIgnorePath, "");
+  }
+  return continueIgnorePath;
+}
 
 export function getContinueGlobalPath(): string {
   // This is ~/.pearai on mac/linux
@@ -40,6 +81,10 @@ export function getGlobalContextFilePath(): string {
   return path.join(getIndexFolderPath(), "globalContext.json");
 }
 
+export function getSharedConfigFilePath(): string {
+  return path.join(getContinueGlobalPath(), "sharedConfig.json");
+}
+
 export function getSessionFilePath(sessionId: string): string {
   return path.join(getSessionsFolderPath(), `${sessionId}.json`);
 }
@@ -64,15 +109,22 @@ export function getConfigJsonPath(ideType: IdeType = "vscode"): string {
   return p;
 }
 
+export function getConfigYamlPath(ideType: IdeType): string {
+  const p = path.join(getContinueGlobalPath(), "config.yaml");
+  // if (!fs.existsSync(p)) {
+  //   if (ideType === "jetbrains") {
+  //     fs.writeFileSync(p, YAML.stringify(defaultConfigYamlJetBrains));
+  //   } else {
+  //     fs.writeFileSync(p, YAML.stringify(defaultConfigYaml));
+  //   }
+  // }
+  return p;
+}
+
 export function getConfigTsPath(): string {
   const p = path.join(getContinueGlobalPath(), "config.ts");
   if (!fs.existsSync(p)) {
-    fs.writeFileSync(
-      p,
-      `export function modifyConfig(config: Config): Config {
-  return config;
-}`,
-    );
+    fs.writeFileSync(p, DEFAULT_CONFIG_TS_CONTENTS);
   }
 
   const typesPath = path.join(getContinueGlobalPath(), "types");
@@ -213,6 +265,10 @@ export async function migrate(
   callback: () => void | Promise<void>,
   onAlreadyComplete?: () => void,
 ) {
+  if (process.env.NODE_ENV === "test") {
+    return await Promise.resolve(callback());
+  }
+
   const migrationsPath = getMigrationsFolderPath();
   const migrationPath = path.join(migrationsPath, id);
 
@@ -269,11 +325,6 @@ export function getPathToRemoteConfig(remoteConfigServerUrl: string): string {
   return dir;
 }
 
-export function internalBetaPathExists(): boolean {
-  const sPath = path.join(getContinueGlobalPath(), ".internal_beta");
-  return fs.existsSync(sPath);
-}
-
 export function getConfigJsonPathForRemote(
   remoteConfigServerUrl: string,
 ): string {
@@ -311,7 +362,7 @@ export function getPromptLogsPath(): string {
 }
 
 export function getGlobalPromptsPath(): string {
-  return path.join(getContinueGlobalPath(), ".prompts");
+  return path.join(getContinueGlobalPath(), "prompts");
 }
 
 export function readAllGlobalPromptFiles(
@@ -336,4 +387,41 @@ export function readAllGlobalPromptFiles(
   });
 
   return promptFiles;
+}
+
+export function getRepoMapFilePath(): string {
+  return path.join(getContinueUtilsPath(), "repo_map.txt");
+}
+
+export function getEsbuildBinaryPath(): string {
+  return path.join(getContinueUtilsPath(), "esbuild");
+}
+
+export function getStagingEnvironmentDotFilePath(): string {
+  return path.join(getContinueGlobalPath(), ".staging");
+}
+
+export function setupInitialDotContinueDirectory() {
+  const devDataTypes = [
+    "chat",
+    "autocomplete",
+    "quickEdit",
+    "tokens_generated",
+  ];
+  devDataTypes.forEach((p) => {
+    const devDataPath = getDevDataFilePath(p);
+    if (!fs.existsSync(devDataPath)) {
+      fs.writeFileSync(devDataPath, "");
+    }
+  });
+}
+
+export function getDiffsDirectoryPath(): string {
+  const diffsPath = path.join(getContinueGlobalPath(), ".diffs"); // .replace(/^C:/, "c:"); ??
+  if (!fs.existsSync(diffsPath)) {
+    fs.mkdirSync(diffsPath, {
+      recursive: true,
+    });
+  }
+  return diffsPath;
 }

@@ -7,7 +7,17 @@ const darkCodeTheme = themes.dracula;
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
+<<<<<<< HEAD
   title: "PearAI",
+=======
+  // Docusaurus V3.6 experimental faster compile features
+  // https://docusaurus.io/blog/releases/3.6#adoption-strategy
+  future: {
+    experimental_faster: true,
+  },
+
+  title: "Continue",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   tagline:
     "the open-source library for accelerating software development with language models",
   favicon: "img/favicon.ico",
@@ -31,10 +41,13 @@ const config = {
   // to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: "en",
-    locales: ["en"],
+    locales: [
+      "en",
+      // "zh-CN"
+    ],
   },
 
-  themes: [["docusaurus-json-schema-plugin", {}]],
+  themes: [],
 
   presets: [
     [
@@ -71,17 +84,39 @@ const config = {
       navbar: {
         title: "PearAI",
         logo: {
+<<<<<<< HEAD
           alt: "PearAI Logo",
           src: "img/logo-dark.png",
           href: "https://trypear.ai",
           srcDark: "img/logo.png",
+=======
+          alt: "Continue Logo",
+          src: "img/logo.png",
+          href: "https://continue.dev",
+          target: "_blank",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         },
         items: [
           {
             type: "docSidebar",
             sidebarId: "docsSidebar",
             position: "left",
-            label: "Docs",
+            label: "User Guide",
+            href: "/",
+          },
+          {
+            type: "docSidebar",
+            sidebarId: "customizingSidebar",
+            position: "left",
+            label: "Customize",
+            href: "/customize/overview",
+          },
+          {
+            type: "docSidebar",
+            sidebarId: "customizingSidebar",
+            position: "left",
+            label: "Reference",
+            href: "/reference",
           },
           {
             to: "https://github.com/trypear/pearai-app",
@@ -94,6 +129,10 @@ const config = {
             label: "Discord",
             position: "right",
             className: "discord-navbar",
+          },
+          {
+            type: "localeDropdown",
+            position: "right",
           },
         ],
       },
@@ -165,27 +204,242 @@ const config = {
       "@docusaurus/plugin-client-redirects",
       {
         redirects: [
-          // Redirects from old docs
           {
+            to: "/customize/overview",
             from: "/customization",
-            to: "/customization/overview",
           },
           {
+            to: "/getting-started/install",
+            from: ["/install/vscode", "/install/jetbrains"],
+          },
+          // {
+          //   to: "/getting-started/install",
+          //   from: "/getting-started",
+          // },
+          {
+            to: "/customize/model-types",
+            from: "/setup/overview",
+          },
+          {
+            to: "/getting-started/overview",
+            from: [
+              "/model-setup/overview",
+              "/model-setup/select-model",
+              "/model-setup/configuration",
+              "/quickstart",
+              "/how-to-use-continue",
+            ],
+          },
+          {
+            to: "/customize/model-providers",
+            from: ["/setup/select-provider", "/setup/model-providers"],
+          },
+          {
+            to: "/customize/deep-dives/codebase",
+            from: [
+              "/walkthroughs/codebase-embeddings",
+              "/features/codebase-embeddings",
+            ],
+          },
+<<<<<<< HEAD
+=======
+          {
+            to: "/customize/deep-dives/autocomplete",
+            from: [
+              "/walkthroughs/tab-autocomplete",
+              "/features/tab-autocomplete",
+            ],
+          },
+          {
+            to: "/customize/deep-dives/prompt-files",
+            from: ["/walkthroughs/prompt-files", "/features/prompt-files"],
+          },
+          {
+            to: "/actions/how-to-use-it#quick-actions",
+            from: "/walkthroughs/quick-actions",
+          },
+          {
+            to: "/customize/changelog",
+            from: "/changelog",
+          },
+          {
+            to: "/reference",
+            from: ["/customization/code-config", "/reference/config"],
+          },
+          {
+            to: "/customize/context-providers",
+            from: "/customization/context-providers",
+          },
+          {
+            to: "/customize/development-data",
+            from: "/development-data",
+          },
+          {
+            to: "/customize/deep-dives/docs",
+            from: "/features/talk-to-your-docs",
+          },
+          {
+            to: "/customize/model-providers/anthropic",
+            from: "/reference/Model Providers/anthropicllm",
+          },
+          {
+            to: "/customize/model-providers/azure",
+            from: "/reference/Model Providers/azure",
+          },
+          {
+            to: "/customize/model-providers/bedrock",
+            from: "/reference/Model Providers/bedrock",
+          },
+          {
+            to: "/customize/model-providers/deepseek",
+            from: "/reference/Model Providers/deepseek",
+          },
+          {
+            to: "/customize/model-providers/free-trial",
+            from: "/reference/Model Providers/freetrial",
+          },
+          {
+            to: "/customize/model-providers/gemini",
+            from: "/reference/Model Providers/geminiapi",
+          },
+          {
+            to: "/customize/model-providers/mistral",
+            from: "/reference/Model Providers/mistral",
+          },
+          {
+            to: "/customize/model-providers/ollama",
+            from: "/reference/Model Providers/ollama",
+          },
+          {
+            to: "/customize/model-providers/openai",
+            from: "/reference/Model Providers/openai",
+          },
+          {
+            to: "/customize/slash-commands",
+            from: "/customization/slash-commands",
+          },
+          {
+            to: "/customize/tutorials/custom-code-rag",
+            from: "/walkthroughs/custom-code-rag",
+          },
+          {
+            to: "/customize/tutorials/llama3.1",
+            from: "/walkthroughs/llama3.1",
+          },
+          {
+            to: "/customize/tutorials/running-continue-without-internet",
+            from: "/walkthroughs/running-continue-without-internet",
+          },
+          {
+            to: "/customize/tutorials/set-up-codestral",
+            from: "/walkthroughs/set-up-codestral",
+          },
+          {
+            to: "/",
+            from: "/intro",
+          },
+          {
+            to: "/customize/model-providers/more/cloudflare",
+            from: "/reference/Model Providers/cloudflare",
+          },
+          {
+            to: "/customize/model-providers/more/cohere",
+            from: "/reference/Model Providers/cohere",
+          },
+          {
+            to: "/customize/model-providers/more/deepinfra",
+            from: "/reference/Model Providers/deepinfra",
+          },
+          {
+            to: "/customize/model-providers/more/flowise",
+            from: "/reference/Model Providers/flowise",
+          },
+          {
+            to: "/customize/model-providers/more/huggingfaceinferenceapi",
+            from: "/reference/Model Providers/huggingfaceinferenceapi",
+          },
+          {
+            to: "/customize/model-providers/more/ipex_llm",
+            from: "/reference/Model Providers/ipex_llm",
+          },
+          {
+            to: "/customize/model-providers/more/kindo",
+            from: "/reference/Model Providers/kindo",
+          },
+          {
+            to: "/customize/model-providers/more/llamacpp",
+            from: "/reference/Model Providers/llamacpp",
+          },
+          {
+            to: "/customize/model-providers/more/llamafile",
+            from: "/reference/Model Providers/llamafile",
+          },
+          {
+            to: "/customize/model-providers/more/lmstudio",
+            from: "/reference/Model Providers/lmstudio",
+          },
+          {
+            to: "/customize/model-providers/more/msty",
+            from: "/reference/Model Providers/msty",
+          },
+          {
+            to: "/customize/model-providers/more/openrouter",
+            from: "/reference/Model Providers/openrouter",
+          },
+          {
+            to: "/customize/model-providers/more/replicatellm",
+            from: "/reference/Model Providers/replicatellm",
+          },
+          {
+            to: "/customize/model-providers/more/sagemaker",
+            from: "/reference/Model Providers/sagemaker",
+          },
+          {
+            to: "/customize/model-providers/more/textgenwebui",
+            from: "/reference/Model Providers/textgenwebui",
+          },
+          {
+            to: "/customize/model-providers/more/together",
+            from: "/reference/Model Providers/together",
+          },
+          {
+            to: "/customize/model-providers/more/novita",
+            from: "/reference/Model Providers/novita",
+          },
+          {
+            to: "/customize/model-providers/more/vllm",
+            from: "/reference/Model Providers/vllm",
+          },
+          {
+            to: "/customize/model-providers/more/watsonx",
+            from: "/reference/Model Providers/watsonx",
+          },
+          {
+            to: "/customize/model-providers/more/nebius",
+            from: "/reference/Model Providers/nebius",
+          },
+          // Sidebar items that should route directly to a subpage
+          {
+            to: "/chat/how-to-use-it",
+            from: "/chat",
+          },
+          {
+            to: "/edit/how-to-use-it",
+            from: "/edit",
+          },
+          {
+            to: "/actions/how-to-use-it",
+            from: "/actions",
+          },
+          {
+            to: "/autocomplete/how-to-use-it",
+            from: "/autocomplete",
+          },
+          {
+            to: "/getting-started/install",
             from: "/getting-started",
-            to: "/quickstart",
           },
-          {
-            from: "/model-setup/overview",
-            to: "/setup/overview",
-          },
-          {
-            from: "/model-setup/select-model",
-            to: "/setup/select-model",
-          },
-          {
-            from: "/model-setup/configuration",
-            to: "/setup/configuration",
-          },
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
         ],
       },
     ],

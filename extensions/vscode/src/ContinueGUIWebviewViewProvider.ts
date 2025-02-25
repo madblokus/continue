@@ -1,7 +1,11 @@
-import type { FileEdit } from "core";
 import { ConfigHandler } from "core/config/ConfigHandler";
 import { getTheme, getThemeType } from "./util/getTheme";
 import * as vscode from "vscode";
+<<<<<<< HEAD
+=======
+
+import { getTheme } from "./util/getTheme";
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 import { getExtensionVersion } from "./util/util";
 import { getExtensionUri, getNonce, getUniqueId } from "./util/vscode";
 import { VsCodeWebviewProtocol } from "./webviewProtocol";
@@ -10,6 +14,8 @@ import { PEARAI_CHAT_VIEW_ID, PEARAI_OVERLAY_VIEW_ID } from "./util/pearai/peara
 
 // The overlay's webview title/id is defined in pearai-app's PearOverlayParts.ts
 // A unique identifier is needed for the messaging protocol to distinguish the webviews.
+
+import type { FileEdit } from "core";
 
 export class ContinueGUIWebviewViewProvider
   implements vscode.WebviewViewProvider
@@ -21,6 +27,7 @@ export class ContinueGUIWebviewViewProvider
   private outputChannel: vscode.OutputChannel;
   private enableDebugLogs: boolean;
 
+<<<<<<< HEAD
   private updateDebugLogsStatus() {
     const settings = vscode.workspace.getConfiguration("pearai");
     this.enableDebugLogs = settings.get<boolean>("enableDebugLogs", false);
@@ -61,22 +68,38 @@ export class ContinueGUIWebviewViewProvider
     }
   }
 
+=======
+  public get isReady(): boolean {
+    return !!this.webview;
+  }
+
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   resolveWebviewView(
     webviewView: vscode.WebviewView,
     _context: vscode.WebviewViewResolveContext,
     _token: vscode.CancellationToken,
   ): void | Thenable<void> {
+    this._webviewView = webviewView;
     this._webview = webviewView.webview;
+<<<<<<< HEAD
 
     this._webview.onDidReceiveMessage((message) => {
       return this.handleWebviewMessage(message);
     });
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     webviewView.webview.html = this.getSidebarContent(
       this.extensionContext,
       webviewView,
     );
   }
 
+<<<<<<< HEAD
+=======
+  private _webview?: vscode.Webview;
+  private _webviewView?: vscode.WebviewView;
+
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   get isVisible() {
     return this._webviewView?.visible;
   }
@@ -105,11 +128,14 @@ export class ContinueGUIWebviewViewProvider
     private readonly windowId: string,
     private readonly extensionContext: vscode.ExtensionContext,
   ) {
+<<<<<<< HEAD
     this.outputChannel = vscode.window.createOutputChannel("PearAI");
     this.enableDebugLogs = false;
     this.updateDebugLogsStatus();
     this.setupDebugLogsListener();
 
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
     this.webviewProtocol = new VsCodeWebviewProtocol(
       (async () => {
         const configHandler = await this.configHandlerPromise;
@@ -168,7 +194,15 @@ export class ContinueGUIWebviewViewProvider
 
     const currentTheme = getTheme();
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("workbench.colorTheme")) {
+      if (
+        e.affectsConfiguration("workbench.colorTheme") ||
+        e.affectsConfiguration("window.autoDetectColorScheme") ||
+        e.affectsConfiguration("window.autoDetectHighContrast") ||
+        e.affectsConfiguration("workbench.preferredDarkColorTheme") ||
+        e.affectsConfiguration("workbench.preferredLightColorTheme") ||
+        e.affectsConfiguration("workbench.preferredHighContrastColorTheme") ||
+        e.affectsConfiguration("workbench.preferredHighContrastLightColorTheme")
+      ) {
         // Send new theme to GUI to update embedded Monaco themes
         this.webviewProtocol?.request("setTheme", { theme: getTheme() });
         this.webviewProtocol?.request("setThemeType", {
@@ -194,22 +228,6 @@ export class ContinueGUIWebviewViewProvider
       <body>
         <div id="root"></div>
 
-        ${`<script>
-        function log(level, ...args) {
-          const text = args.map(arg =>
-            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-          ).join(' ');
-          vscode.postMessage({ messageType: 'log', level, text, messageId: "log" });
-        }
-
-        window.console.log = (...args) => log('log', ...args);
-        window.console.info = (...args) => log('info', ...args);
-        window.console.warn = (...args) => log('warn', ...args);
-        window.console.error = (...args) => log('error', ...args);
-        window.console.debug = (...args) => log('debug', ...args);
-
-        console.debug('Logging initialized');
-        </script>`}
         ${
           inDevelopmentMode
             ? `<script type="module">
@@ -233,8 +251,8 @@ export class ContinueGUIWebviewViewProvider
         <script>window.fullColorTheme = ${JSON.stringify(currentTheme)}</script>
         <script>window.colorThemeName = "dark-plus"</script>
         <script>window.workspacePaths = ${JSON.stringify(
-          vscode.workspace.workspaceFolders?.map(
-            (folder) => folder.uri.fsPath,
+          vscode.workspace.workspaceFolders?.map((folder) =>
+            folder.uri.toString(),
           ) || [],
         )}</script>
         <script>window.isFirstLaunch = ${isFirstLaunch(this.extensionContext)}</script>

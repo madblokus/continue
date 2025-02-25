@@ -5,8 +5,13 @@
 # - Debug -> Extension
 set -e
 
+echo "Installing root-level dependencies..."
+npm install
+
 echo "Installing Core extension dependencies..."
 pushd core
+## This flag is set because we pull down Chromium at runtime
+export PUPPETEER_SKIP_DOWNLOAD='true'
 npm install
 npm link
 popd
@@ -37,6 +42,7 @@ popd
 echo "Installing docs dependencies..."
 pushd docs
 npm install
+<<<<<<< HEAD:scripts/install-and-build.sh
 popd
 
 
@@ -47,3 +53,7 @@ npm run prepackage
 npm run package
 
 popd
+=======
+
+popd
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d:scripts/install-dependencies.sh

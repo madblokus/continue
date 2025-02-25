@@ -1,6 +1,6 @@
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import _ from "lodash";
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
@@ -14,14 +14,13 @@ import {
 } from "../../components";
 import StyledMarkdownPreview from "../../components/markdown/StyledMarkdownPreview";
 import ModelCard from "../../components/modelSelection/ModelCard";
-import ModelProviderTag from "../../components/modelSelection/ModelProviderTag";
-import Toggle from "../../components/modelSelection/Toggle";
+import { ModelProviderTag } from "../../components/modelSelection/ModelProviderTag";
 import { IdeMessengerContext } from "../../context/IdeMessenger";
 import { useNavigationListener } from "../../hooks/useNavigationListener";
-import { setDefaultModel } from "../../redux/slices/stateSlice";
 import { updatedObj } from "../../util";
 import type { ProviderInfo } from "./configs/providers";
 import { providers } from "./configs/providers";
+import { setDefaultModel } from "../../redux/slices/configSlice";
 
 const GridDiv = styled.div`
   display: grid;
@@ -72,17 +71,21 @@ function ConfigureProvider() {
     undefined,
   );
 
+<<<<<<< HEAD
   //  different authentication flow is required for watsonx. This state helps to determine which flow to use for authentication
   const [watsonxAuthenticate, setWatsonxAuthenticate] = React.useState(true);
 
   const { watch, handleSubmit } = formMethods;
 
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   useEffect(() => {
     if (providerName) {
       setModelInfo(providers[providerName]);
     }
   }, [providerName]);
 
+<<<<<<< HEAD
   // TODO: This is not being used - do we still need this?
   const handleContinue = () => {
     if (!modelInfo) return;
@@ -104,6 +107,8 @@ function ConfigureProvider() {
     navigate("/");
   };
 
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   const disableModelCards = useCallback(() => {
     return (
       modelInfo?.collectInputFor?.some((d) => {
@@ -116,6 +121,7 @@ function ConfigureProvider() {
     );
   }, [modelInfo, formMethods]);
 
+<<<<<<< HEAD
   const enablecardsForApikey = useCallback(() => {
     return modelInfo?.collectInputFor
       ?.filter((d) => d.isWatsonxAuthenticatedByApiKey)
@@ -186,11 +192,13 @@ function ConfigureProvider() {
     })();
   };
 
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   return (
     <FormProvider {...formMethods}>
       <div className="overflow-y-scroll">
         <div
-          className="items-center flex m-0 p-0 sticky top-0"
+          className="sticky top-0 m-0 flex items-center p-0"
           style={{
             borderBottom: `0.5px solid ${lightGray}`,
             backgroundColor: vscBackground,
@@ -201,10 +209,15 @@ function ConfigureProvider() {
             width="1.2em"
             height="1.2em"
             onClick={() => navigate("/addModel")}
-            className="inline-block ml-4 cursor-pointer"
+            className="ml-4 inline-block cursor-pointer"
           />
+<<<<<<< HEAD
           <h3 className="text-lg font-bold m-2 inline-block">
             Configure Provider
+=======
+          <h3 className="m-2 inline-block text-lg font-bold">
+            Configure provider
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
           </h3>
         </div>
 
@@ -229,112 +242,31 @@ function ConfigureProvider() {
             source={modelInfo?.longDescription || modelInfo?.description}
           />
 
-          {/* The WatsonX Authentication coukd be done by two different ways
-           1 ==> Using Api key
-           2 ==> Using Credentials */}
-          {providerName === "watsonx" ? (
+          {(modelInfo?.collectInputFor?.filter((d) => d.required).length || 0) >
+            0 && (
             <>
-              <div className="col-span-full py-4">
-                <Toggle
-                  selected={watsonxAuthenticate}
-                  optionOne={"Authenticate by API key"}
-                  optionTwo={"Authenticate by crendentials"}
-                  onClick={() => {
-                    setWatsonxAuthenticate((prev) => !prev);
-                  }}
-                ></Toggle>
-              </div>
-              {watsonxAuthenticate ? (
-                <>
-                  {(modelInfo?.collectInputFor?.filter((d) => d.required)
-                    .length || 0) > 0 && (
-                    <>
-                      <h3 className="mb-2">Enter required parameters</h3>
+              <h3 className="mb-2">Enter required parameters</h3>
 
-                      {modelInfo?.collectInputFor
-                        .filter((d) => d.isWatsonxAuthenticatedByApiKey)
-                        .map((d, idx) => (
-                          <div key={idx} className="mb-2">
-                            <label htmlFor={d.key}>{d.label}</label>
-                            <Input
-                              type={d.inputType}
-                              id={d.key}
-                              className="border-2 border-gray-200 rounded-md p-2 m-2"
-                              placeholder={d.placeholder}
-                              defaultValue={d.defaultValue}
-                              min={d.min}
-                              max={d.max}
-                              step={d.step}
-                              {...formMethods.register(d.key, {
-                                required: false,
-                              })}
-                            />
-                          </div>
-                        ))}
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  {(modelInfo?.collectInputFor?.filter((d) => d.required)
-                    .length || 0) > 0 && (
-                    <>
-                      <h3 className="mb-2">Enter required parameters</h3>
-
-                      {modelInfo?.collectInputFor
-                        .filter((d) => d.isWatsonxAuthenticatedByCredentials)
-                        .map((d, idx) => (
-                          <div key={idx} className="mb-2">
-                            <label htmlFor={d.key}>{d.label}</label>
-                            <Input
-                              type={d.inputType}
-                              id={d.key}
-                              className="border-2 border-gray-200 rounded-md p-2 m-2"
-                              placeholder={d.placeholder}
-                              defaultValue={d.defaultValue}
-                              min={d.min}
-                              max={d.max}
-                              step={d.step}
-                              {...formMethods.register(d.key, {
-                                required: true,
-                              })}
-                            />
-                          </div>
-                        ))}
-                    </>
-                  )}
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              {(modelInfo?.collectInputFor?.filter((d) => d.required).length ||
-                0) > 0 && (
-                <>
-                  <h3 className="mb-2">Enter required parameters</h3>
-
-                  {modelInfo?.collectInputFor
-                    ?.filter((d) => d.required)
-                    .map((d, idx) => (
-                      <div key={idx} className="mb-2">
-                        <label htmlFor={d.key}>{d.label}</label>
-                        <Input
-                          type={d.inputType}
-                          id={d.key}
-                          className="border-2 border-gray-200 rounded-md p-2 m-2"
-                          placeholder={d.placeholder}
-                          defaultValue={d.defaultValue}
-                          min={d.min}
-                          max={d.max}
-                          step={d.step}
-                          {...formMethods.register(d.key, {
-                            required: true,
-                          })}
-                        />
-                      </div>
-                    ))}
-                </>
-              )}
+              {modelInfo?.collectInputFor
+                ?.filter((d) => d.required)
+                .map((d, idx) => (
+                  <div key={idx} className="mb-2">
+                    <label htmlFor={d.key}>{d.label}</label>
+                    <Input
+                      type={d.inputType}
+                      id={d.key}
+                      className="m-2 rounded-md border-2 border-gray-200 p-2"
+                      placeholder={d.placeholder ?? d.label}
+                      defaultValue={d.defaultValue}
+                      min={d.min}
+                      max={d.max}
+                      step={d.step}
+                      {...formMethods.register(d.key, {
+                        required: true,
+                      })}
+                    />
+                  </div>
+                ))}
             </>
           )}
 
@@ -344,9 +276,8 @@ function ConfigureProvider() {
               <summary className="mb-2 cursor-pointer">
                 <b>Advanced (optional)</b>
               </summary>
+
               {modelInfo?.collectInputFor?.map((d, idx) => {
-                // Check the attribute is only for Watson X
-                if (d.isWatsonxAttribute) return null;
                 if (d.required) return null;
 
                 let defaultValue = d.defaultValue;
@@ -369,9 +300,15 @@ function ConfigureProvider() {
                     <Input
                       type={d.inputType}
                       id={d.key}
+<<<<<<< HEAD
                       className="border-2 border-gray-200 rounded-md p-2 m-2"
                       placeholder={d.placeholder}
                       defaultValue={defaultValue}
+=======
+                      className="m-2 rounded-md border-2 border-gray-200 p-2"
+                      placeholder={d.placeholder ?? d.label}
+                      defaultValue={d.defaultValue}
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
                       min={d.min}
                       max={d.max}
                       step={d.step}
@@ -420,6 +357,7 @@ function ConfigureProvider() {
         {providerName === "pearai_server" ? (
             <>
 
+<<<<<<< HEAD
                 <CustomModelButton
                   className="m-5"
                   disabled={false}
@@ -428,6 +366,33 @@ function ConfigureProvider() {
                       "openUrl",
                       "https://trypear.ai/signin?callback=pearai://pearai.pearai/auth", // Change to http://localhost:3000 and run pear-landing-page repo to test locally
                     )
+=======
+          <h3 className="mb-2">Select a model preset</h3>
+        </div>
+        <GridDiv>
+          {modelInfo?.packages.map((pkg, idx) => {
+            return (
+              <ModelCard
+                key={idx}
+                disabled={disableModelCards()}
+                title={pkg.title}
+                description={pkg.description}
+                tags={pkg.tags}
+                refUrl={pkg.refUrl}
+                icon={pkg.icon || modelInfo.icon}
+                dimensions={pkg.dimensions}
+                onClick={(e, dimensionChoices) => {
+                  if (disableModelCards()) return;
+                  let formParams: any = {};
+                  for (const d of modelInfo.collectInputFor || []) {
+                    const val = formMethods.watch(d.key);
+                    if (val === "" || val === undefined || val === null) {
+                      continue;
+                    }
+                    formParams = updatedObj(formParams, {
+                      [d.key]: d.inputType === "text" ? val : parseFloat(val),
+                    });
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
                   }
                 >
                   <h3 className="text-center my-2">Sign Up / Log In</h3>

@@ -1,8 +1,13 @@
 import * as path from "path";
+<<<<<<< HEAD
 import { RunResult } from "sqlite3";
+=======
+
+import { RunResult } from "sqlite3";
+
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 import { IContinueServerClient } from "../../continueServer/interface.js";
 import { Chunk, IndexTag, IndexingProgressUpdate } from "../../index.js";
-import { getBasename } from "../../util/index.js";
 import { DatabaseConnection, SqliteDb, tagToString } from "../refreshIndex.js";
 import {
   IndexResultType,
@@ -11,7 +16,13 @@ import {
   RefreshIndexResults,
   type CodebaseIndex,
 } from "../types.js";
+<<<<<<< HEAD
 import { chunkDocument, shouldChunk } from "./chunk.js";
+=======
+
+import { chunkDocument, shouldChunk } from "./chunk.js";
+import { getUriPathBasename } from "../../util/uri.js";
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 
 export class ChunkCodebaseIndex implements CodebaseIndex {
   relativeExpectedTime: number = 1;
@@ -23,10 +34,125 @@ export class ChunkCodebaseIndex implements CodebaseIndex {
     private readonly pathSep: string,
     private readonly continueServerClient: IContinueServerClient,
     private readonly maxChunkSize: number,
-  ) {
-    this.readFile = readFile;
+  ) {}
+
+  async *update(
+    tag: IndexTag,
+    results: RefreshIndexResults,
+    markComplete: MarkCompleteCallback,
+    repoName: string | undefined,
+  ): AsyncGenerator<IndexingProgressUpdate, any, unknown> {
+    const db = await SqliteDb.get();
+    await this.createTables(db);
+    const tagString = tagToString(tag);
+
+    // Check the remote cache
+    if (this.continueServerClient.connected) {
+      try {
+        const keys = results.compute.map(({ cacheKey }) => cacheKey);
+        const resp = await this.continueServerClient.getFromIndexCache(
+          keys,
+          "chunks",
+          repoName,
+        );
+
+        for (const [cacheKey, chunks] of Object.entries(resp.files)) {
+          await this.insertChunks(db, tagString, chunks);
+        }
+        results.compute = results.compute.filter(
+          (item) => !resp.files[item.cacheKey],
+        );
+      } catch (e) {
+        console.error("Failed to fetch from remote cache: ", e);
+      }
+    }
+
+    let accumulatedProgress = 0;
+
+    if (results.compute.length > 0) {
+      const filepath = results.compute[0].path;
+      const folderName = path.basename(path.dirname(filepath));
+
+      yield {
+        desc: `Chunking files in ${folderName}`,
+        status: "indexing",
+        progress: accumulatedProgress,
+      };
+      const chunks = await this.computeChunks(results.compute);
+      await this.insertChunks(db, tagString, chunks);
+      await markComplete(results.compute, IndexResultType.Compute);
+    }
+
+    // Add tag
+    for (const item of results.addTag) {
+      await db.run(
+        `
+        INSERT INTO chunk_tags (chunkId, tag)
+        SELECT id, ? FROM chunks
+        WHERE cacheKey = ? AND path = ?
+      `,
+        [tagString, item.cacheKey, item.path],
+      );
+      await markComplete([item], IndexResultType.AddTag);
+      accumulatedProgress += 1 / results.addTag.length / 4;
+      yield {
+        progress: accumulatedProgress,
+        desc: `Adding ${getUriPathBasename(item.path)}`,
+        status: "indexing",
+      };
+    }
+
+    // Remove tag
+    for (const item of results.removeTag) {
+      await db.run(
+        `
+        DELETE FROM chunk_tags
+        WHERE tag = ?
+          AND chunkId IN (
+            SELECT id FROM chunks
+            WHERE cacheKey = ? AND path = ?
+          )
+      `,
+        [tagString, item.cacheKey, item.path],
+      );
+      await markComplete([item], IndexResultType.RemoveTag);
+      accumulatedProgress += 1 / results.removeTag.length / 4;
+      yield {
+        progress: accumulatedProgress,
+        desc: `Removing ${getUriPathBasename(item.path)}`,
+        status: "indexing",
+      };
+    }
+
+    // Delete
+    for (const item of results.del) {
+      const chunkToDelete = await db.get(
+        "SELECT id FROM chunks WHERE cacheKey = ?",
+        [item.cacheKey],
+      );
+
+      if (chunkToDelete) {
+        await db.run("DELETE FROM chunks WHERE id = ?", [chunkToDelete.id]);
+
+        // Delete from chunk_tags
+        await db.run("DELETE FROM chunk_tags WHERE chunkId = ?", [
+          chunkToDelete.id,
+        ]);
+      } else {
+        console.debug("Chunk to delete wasn't found in the table: ", item.path);
+      }
+
+      await markComplete([item], IndexResultType.Delete);
+      accumulatedProgress += 1 / results.del.length / 4;
+      yield {
+        progress: accumulatedProgress,
+        desc: `Removing ${getUriPathBasename(item.path)}`,
+        status: "indexing",
+      };
+    }
   }
 
+<<<<<<< HEAD
   async *update(
     tag: IndexTag,
     results: RefreshIndexResults,
@@ -143,6 +269,8 @@ export class ChunkCodebaseIndex implements CodebaseIndex {
     }
   }
 
+=======
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   private async createTables(db: DatabaseConnection) {
     await db.exec(`CREATE TABLE IF NOT EXISTS chunks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -164,7 +292,11 @@ export class ChunkCodebaseIndex implements CodebaseIndex {
 
   private async packToChunks(pack: PathAndCacheKey): Promise<Chunk[]> {
     const contents = await this.readFile(pack.path);
+<<<<<<< HEAD
     if (!shouldChunk(this.pathSep, pack.path, contents)) {
+=======
+    if (!shouldChunk(pack.path, contents)) {
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
       return [];
     }
     const chunks: Chunk[] = [];

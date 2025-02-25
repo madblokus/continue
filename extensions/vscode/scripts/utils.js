@@ -11,10 +11,21 @@ const {
 const continueDir = path.join(__dirname, "..", "..", "..");
 
 function copyConfigSchema() {
-  fs.copyFileSync(
-    "config_schema.json",
-    path.join("..", "..", "docs", "static", "schemas", "config.json"),
-  );
+  // Modify and copy for .continuerc.json
+  const schema = JSON.parse(fs.readFileSync("config_schema.json", "utf8"));
+  schema.$defs.SerializedContinueConfig.properties.mergeBehavior = {
+    type: "string",
+    enum: ["merge", "overwrite"],
+    default: "merge",
+    title: "Merge behavior",
+    markdownDescription:
+      "If set to 'merge', .continuerc.json will be applied on top of config.json (arrays and objects are merged). If set to 'overwrite', then every top-level property of .continuerc.json will overwrite that property from config.json.",
+    "x-intellij-html-description":
+      "<p>If set to <code>merge</code>, <code>.continuerc.json</code> will be applied on top of <code>config.json</code> (arrays and objects are merged). If set to <code>overwrite</code>, then every top-level property of <code>.continuerc.json</code> will overwrite that property from <code>config.json</code>.</p>",
+  };
+  fs.writeFileSync("continue_rc_schema.json", JSON.stringify(schema, null, 2));
+
+  // Copy config schemas to intellij
   fs.copyFileSync(
     "config_schema.json",
     path.join(
@@ -26,6 +37,7 @@ function copyConfigSchema() {
       "config_schema.json",
     ),
   );
+<<<<<<< HEAD
   // Modify and copy for .pearairc.json
   const schema = JSON.parse(fs.readFileSync("config_schema.json", "utf8"));
   schema.definitions.SerializedContinueConfig.properties.mergeBehavior = {
@@ -37,6 +49,33 @@ function copyConfigSchema() {
       "If set to 'merge', .pearairc.json will be applied on top of config.json (arrays and objects are merged). If set to 'overwrite', then every top-level property of .pearairc.json will overwrite that property from config.json.",
   };
   fs.writeFileSync("continue_rc_schema.json", JSON.stringify(schema, null, 2));
+=======
+  fs.copyFileSync(
+    "continue_rc_schema.json",
+    path.join(
+      "..",
+      "intellij",
+      "src",
+      "main",
+      "resources",
+      "continue_rc_schema.json",
+    ),
+  );
+}
+
+function copyTokenizers() {
+  fs.copyFileSync(
+    path.join(__dirname, "../../../core/llm/llamaTokenizerWorkerPool.mjs"),
+    path.join(__dirname, "../out/llamaTokenizerWorkerPool.mjs"),
+  );
+  console.log("[info] Copied llamaTokenizerWorkerPool");
+
+  fs.copyFileSync(
+    path.join(__dirname, "../../../core/llm/llamaTokenizer.mjs"),
+    path.join(__dirname, "../out/llamaTokenizer.mjs"),
+  );
+  console.log("[info] Copied llamaTokenizer");
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
 }
 
 function installNodeModules() {
@@ -64,7 +103,7 @@ async function buildGui(isGhAction) {
     execCmdSync("npm run build");
   }
 
-  // Copy over the dist folder to the Intellij extension //
+  // Copy over the dist folder to the JetBrains extension //
   const intellijExtensionWebviewPath = path.join(
     "..",
     "extensions",
@@ -84,7 +123,7 @@ async function buildGui(isGhAction) {
     ncp("dist", intellijExtensionWebviewPath, (error) => {
       if (error) {
         console.warn(
-          "[error] Error copying React app build to Intellij extension: ",
+          "[error] Error copying React app build to JetBrains extension: ",
           error,
         );
         reject(error);
@@ -100,13 +139,7 @@ async function buildGui(isGhAction) {
   fs.copyFileSync("tmp_index.html", indexHtmlPath);
   fs.unlinkSync("tmp_index.html");
 
-  // Copy over other misc. files
-  fs.copyFileSync(
-    "../extensions/vscode/gui/onigasm.wasm",
-    path.join(intellijExtensionWebviewPath, "onigasm.wasm"),
-  );
-
-  console.log("[info] Copied gui build to Intellij extension");
+  console.log("[info] Copied gui build to JetBrains extension");
 
   // Then copy over the dist folder to the VSCode extension //
   const vscodeGuiPath = path.join("../extensions/vscode/gui");
@@ -242,6 +275,7 @@ async function copyNodeModules() {
     "@esbuild",
     "@lancedb",
     "@vscode/ripgrep",
+    "workerpool",
   ];
   fs.mkdirSync("out/node_modules", { recursive: true });
 
@@ -313,15 +347,13 @@ async function downloadEsbuildBinary(target) {
     "win32-x64":
       "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.17.19.tgz",
   }[target];
-  execCmdSync(
-    `curl -L -o out/tmp/esbuild.tgz ${downloadUrl}`,
-  );
+  execCmdSync(`curl -L -o out/tmp/esbuild.tgz ${downloadUrl}`);
   execCmdSync("cd out/tmp && tar -xvzf esbuild.tgz");
   // Copy the installed package back to the current directory
   let tmpPath = "out/tmp/package/bin";
   let outPath = `out/node_modules/@esbuild/${target}/bin`;
   if (target.startsWith("win")) {
-    tmpPath = 'out/tmp/package';
+    tmpPath = "out/tmp/package";
     outPath = `out/node_modules/@esbuild/${target}`;
   }
 
@@ -332,10 +364,7 @@ async function downloadEsbuildBinary(target) {
       { dereference: true },
       (error) => {
         if (error) {
-          console.error(
-            `[error] Error copying esbuild package`,
-            error,
-          );
+          console.error(`[error] Error copying esbuild package`, error);
           reject(error);
         } else {
           resolve();
@@ -343,7 +372,7 @@ async function downloadEsbuildBinary(target) {
       },
     );
   });
-  rimrafSync("out/tmp")
+  rimrafSync("out/tmp");
 }
 
 async function downloadSqliteBinary(target) {
@@ -393,7 +422,8 @@ async function copySqliteBinary() {
 async function downloadRipgrepBinary(target) {
   console.log("[info] Downloading pre-built ripgrep binary");
   rimrafSync("node_modules/@vscode/ripgrep/bin");
-  fs.mkdirSync("node_modules/@vscode/ripgrep/bin", { recursive: true });4
+  fs.mkdirSync("node_modules/@vscode/ripgrep/bin", { recursive: true });
+  4;
   const downloadUrl = {
     "darwin-arm64":
       "https://github.com/microsoft/ripgrep-prebuilt/releases/download/v13.0.0-10/ripgrep-v13.0.0-10-aarch64-apple-darwin.tar.gz",
@@ -409,8 +439,7 @@ async function downloadRipgrepBinary(target) {
       "https://github.com/microsoft/ripgrep-prebuilt/releases/download/v13.0.0-10/ripgrep-v13.0.0-10-x86_64-pc-windows-msvc.zip",
   }[target];
 
-
-  if(target.startsWith("win")) {
+  if (target.startsWith("win")) {
     execCmdSync(
       `curl -L -o node_modules/@vscode/ripgrep/bin/build.zip ${downloadUrl}`,
     );
@@ -420,7 +449,9 @@ async function downloadRipgrepBinary(target) {
     execCmdSync(
       `curl -L -o node_modules/@vscode/ripgrep/bin/build.tar.gz ${downloadUrl}`,
     );
-    execCmdSync("cd node_modules/@vscode/ripgrep/bin && tar -xvzf build.tar.gz");
+    execCmdSync(
+      "cd node_modules/@vscode/ripgrep/bin && tar -xvzf build.tar.gz",
+    );
     fs.unlinkSync("node_modules/@vscode/ripgrep/bin/build.tar.gz");
   }
 }
@@ -484,6 +515,26 @@ async function installNodeModuleInTempDirAndCopyToCurrent(packageName, toCopy) {
   }
 }
 
+async function copyScripts() {
+  process.chdir(path.join(continueDir, "extensions", "vscode"));
+  console.log("[info] Copying scripts from core");
+  await new Promise((resolve, reject) => {
+    ncp(
+      path.join(__dirname, "../../../core/scripts"),
+      path.join(__dirname, "../out"),
+      { dereference: true },
+      (error) => {
+        if (error) {
+          console.warn("[error] Error copying script files", error);
+          reject(error);
+        } else {
+          resolve();
+        }
+      },
+    );
+  });
+}
+
 module.exports = {
   copyConfigSchema,
   installNodeModules,
@@ -497,4 +548,6 @@ module.exports = {
   installNodeModuleInTempDirAndCopyToCurrent,
   downloadSqliteBinary,
   downloadRipgrepBinary,
+  copyTokenizers,
+  copyScripts,
 };

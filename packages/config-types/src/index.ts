@@ -11,6 +11,7 @@ export const completionOptionsSchema = z.object({
   stop: z.array(z.string()).optional(),
   maxTokens: z.number().optional(),
   numThreads: z.number().optional(),
+  useMmap: z.boolean().optional(),
   keepAlive: z.number().optional(),
   raw: z.boolean().optional(),
   stream: z.boolean().optional(),
@@ -51,11 +52,17 @@ export const modelDescriptionSchema = z.object({
     "gemini",
     "mistral",
     "bedrock",
+    "sagemaker",
     "cloudflare",
     "azure",
     "continue-proxy",
+<<<<<<< HEAD
     "pearai_server",
     "perplexity"
+=======
+    "nebius",
+    "scaleway",
+>>>>>>> 1ce064830391b3837099fe696ff3c1438bd4872d
   ]),
   model: z.string(),
   apiKey: z.string().optional(),
@@ -107,11 +114,13 @@ export const embeddingsProviderSchema = z.object({
     "free-trial",
     "gemini",
     "continue-proxy",
+    "nebius",
+    "scaleway",
   ]),
   apiBase: z.string().optional(),
   apiKey: z.string().optional(),
   model: z.string().optional(),
-  engine: z.string().optional(),
+  deployment: z.string().optional(),
   apiType: z.string().optional(),
   apiVersion: z.string().optional(),
   requestOptions: requestOptionsSchema.optional(),
@@ -122,28 +131,25 @@ export const uiOptionsSchema = z.object({
   codeBlockToolbarPosition: z.enum(["top", "bottom"]).optional(),
   fontSize: z.number().optional(),
   displayRawMarkdown: z.boolean().optional(),
+  showChatScrollbar: z.boolean().optional(),
+  codeWrap: z.boolean().optional(),
 });
 export type UiOptions = z.infer<typeof uiOptionsSchema>;
 
 export const tabAutocompleteOptionsSchema = z.object({
   disable: z.boolean(),
-  useCopyBuffer: z.boolean(),
-  useSuffix: z.boolean(),
   maxPromptTokens: z.number(),
   debounceDelay: z.number(),
   maxSuffixPercentage: z.number(),
   prefixPercentage: z.number(),
+  transform: z.boolean().optional(),
   template: z.string().optional(),
   multilineCompletions: z.enum(["always", "never", "auto"]),
   slidingWindowPrefixPercentage: z.number(),
   slidingWindowSize: z.number(),
-  maxSnippetPercentage: z.number(),
-  recentlyEditedSimilarityThreshold: z.number(),
   useCache: z.boolean(),
   onlyMyCode: z.boolean(),
-  useOtherFiles: z.boolean(),
   useRecentlyEdited: z.boolean(),
-  recentLinePrefixMatchMinLength: z.number(),
   disableInFiles: z.array(z.string()).optional(),
   useImports: z.boolean().optional(),
 });
@@ -200,10 +206,16 @@ export type DevData = z.infer<typeof devDataSchema>;
 
 export const siteIndexingConfigSchema = z.object({
   startUrl: z.string(),
-  rootUrl: z.string(),
+  // rootUrl: z.string(),
   title: z.string(),
   maxDepth: z.string().optional(),
   faviconUrl: z.string().optional(),
+  useLocalCrawling: z.boolean().optional(),
+});
+
+export const controlPlaneConfigSchema = z.object({
+  useContinueForTeamsProxy: z.boolean().optional(),
+  proxyUrl: z.string().optional(),
 });
 
 export const configJsonSchema = z.object({
@@ -224,5 +236,6 @@ export const configJsonSchema = z.object({
   tabAutocompleteOptions: tabAutocompleteOptionsSchema.optional(),
   ui: uiOptionsSchema.optional(),
   docs: z.array(siteIndexingConfigSchema).optional(),
+  controlPlane: controlPlaneConfigSchema.optional(),
 });
 export type ConfigJson = z.infer<typeof configJsonSchema>;

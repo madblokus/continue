@@ -5,8 +5,13 @@ import {
   ContextSubmenuItem,
   LoadSubmenuItemsArgs,
 } from "../../index.js";
-import { getBasename, groupByLastNPathParts, getUniqueFilePath } from "../../util/index.js";
+import { walkDirs } from "../../indexing/walkDir.js";
+import {
+  getShortestUniqueRelativeUriPaths,
+  getUriPathBasename,
+} from "../../util/uri.js";
 import { BaseContextProvider } from "../index.js";
+import { retrieveContextItemsFromEmbeddings } from "../retrieval/retrieval.js";
 
 class FolderContextProvider extends BaseContextProvider {
   static description: ContextProviderDescription = {
@@ -14,28 +19,36 @@ class FolderContextProvider extends BaseContextProvider {
     displayTitle: "Folder",
     description: "Type to search",
     type: "submenu",
+    dependsOnIndexing: true,
   };
 
   async getContextItems(
     query: string,
     extras: ContextProviderExtras,
   ): Promise<ContextItem[]> {
-    const { retrieveContextItemsFromEmbeddings } = await import(
-      "../retrieval/retrieval.js"
-    );
     return retrieveContextItemsFromEmbeddings(extras, this.options, query);
   }
   async loadSubmenuItems(
     args: LoadSubmenuItemsArgs,
   ): Promise<ContextSubmenuItem[]> {
-    const folders = await args.ide.listFolders();
-    const folderGroups = groupByLastNPathParts(folders, 2);
+    const workspaceDirs = await args.ide.getWorkspaceDirs();
+    const folders = await walkDirs(
+      args.ide,
+      {
+        onlyDirs: true,
+      },
+      workspaceDirs,
+    );
+    const withUniquePaths = getShortestUniqueRelativeUriPaths(
+      folders,
+      workspaceDirs,
+    );
 
-    return folders.map((folder) => {
+    return withUniquePaths.map((folder) => {
       return {
-        id: folder,
-        title: getBasename(folder),
-        description: getUniqueFilePath(folder, folderGroups)
+        id: folder.uri,
+        title: getUriPathBasename(folder.uri),
+        description: folder.uniquePath,
       };
     });
   }

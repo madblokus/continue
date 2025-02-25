@@ -1,12 +1,13 @@
 import { ContinueConfig, QuickActionConfig } from "core";
 import { Telemetry } from "core/util/posthog";
 import * as vscode from "vscode";
+
 import { QuickEditShowParams } from "../../../quickEdit/QuickEditQuickPick";
 import {
   CONTINUE_WORKSPACE_KEY,
   getContinueWorkspaceConfig,
 } from "../../../util/workspaceConfig";
-import { isTutorialFile } from "./TutorialCodeLensProvider";
+import { isTutorialFile } from "../../../util/tutorial";
 
 export const ENABLE_QUICK_ACTIONS_KEY = "enableQuickActions";
 
@@ -58,13 +59,7 @@ export class QuickActionsCodeLensProvider implements vscode.CodeLensProvider {
     vscode.SymbolKind.Constructor,
   ];
 
-  customQuickActionsConfig?: QuickActionConfig[];
-
-  constructor(customQuickActionsConfigs?: QuickActionConfig[]) {
-    if (customQuickActionsConfigs) {
-      this.customQuickActionsConfig = customQuickActionsConfigs;
-    }
-  }
+  constructor(private customQuickActionsConfigs?: QuickActionConfig[]) {}
 
   getCustomCommands(
     range: vscode.Range,
@@ -95,38 +90,29 @@ export class QuickActionsCodeLensProvider implements vscode.CodeLensProvider {
     return [quickEdit];
   }
 
-  getSymbolsFrom(symbol: vscode.DocumentSymbol): vscode.DocumentSymbol[] {
-    if (symbol.children.length === 0) {
-      return [symbol];
-    }
-
-    const symbols: vscode.DocumentSymbol[] = [];
-
-    symbols.push(symbol);
-
-    for (const children of symbol.children) {
-      if (children.children.length === 0) {
-        symbols.push(children);
-      } else {
-        symbols.push(...this.getSymbolsFrom(children));
-      }
-    }
-    return symbols;
-  }
-
-  async getAllSymbols(uri: vscode.Uri) {
-    const docSymbols = await vscode.commands.executeCommand<
+  /**
+   * Get all top-level symbols and their immediate children.
+   * We do not recurse through all children to avoid noise.
+   */
+  async getTopLevelAndChildrenSymbols(uri: vscode.Uri) {
+    const topLevelSymbols = await vscode.commands.executeCommand<
       Array<vscode.DocumentSymbol> | undefined
     >("vscode.executeDocumentSymbolProvider", uri);
 
-    if (!docSymbols) {
+    if (!topLevelSymbols) {
       return [];
     }
 
-    const symbols = docSymbols.flatMap((symbol) => this.getSymbolsFrom(symbol));
+    const childrenSymbols = topLevelSymbols.flatMap(
+      (symbol) => symbol.children,
+    );
 
-    const filteredSmybols = symbols?.filter((def) =>
-      this.quickActionSymbolKinds.includes(def.kind),
+    const symbols = [...topLevelSymbols, ...childrenSymbols];
+
+    const filteredSmybols = symbols?.filter(
+      (symbol) =>
+        this.quickActionSymbolKinds.includes(symbol.kind) &&
+        !symbol.range.isSingleLine,
     );
 
     return filteredSmybols;
@@ -147,11 +133,11 @@ export class QuickActionsCodeLensProvider implements vscode.CodeLensProvider {
       return [];
     }
 
-    const symbols = await this.getAllSymbols(document.uri);
+    const symbols = await this.getTopLevelAndChildrenSymbols(document.uri);
 
     return symbols.flatMap(({ range }) => {
-      const commands: vscode.Command[] = !!this.customQuickActionsConfig
-        ? this.getCustomCommands(range, this.customQuickActionsConfig)
+      const commands: vscode.Command[] = !!this.customQuickActionsConfigs
+        ? this.getCustomCommands(range, this.customQuickActionsConfigs)
         : this.getDefaultCommand(range);
 
       return commands.map((command) => new vscode.CodeLens(range, command));
