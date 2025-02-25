@@ -1,3 +1,7 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import { TabAutocompleteOptions } from "../index.js";
 
 export const DEFAULT_AUTOCOMPLETE_OPTS: TabAutocompleteOptions = {
@@ -35,5 +39,6 @@ export const RETRIEVAL_PARAMS = {
 };
 
 // Todo: Make this into an env variable (with default digitalocean link)
-export const SERVER_URL = "https://stingray-app-gb2an.ondigitalocean.app/pearai-server-api2";
+export const SERVER_URL =
+  "https://stingray-app-gb2an.ondigitalocean.app/pearai-server-api2";
 // export const SERVER_URL = "http://localhost:8000";
